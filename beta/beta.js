@@ -1,73 +1,30 @@
-// Closed-testing sign-up. Talks to the Apps Script web app in /beta-signup/Code.gs.
-// Share links like https://faidahq.com/beta/?app=biasharathrive
+// Closed-testing guide. Share links like https://faidahq.com/beta/?app=biasharathrive
+//
+// To add an app: create a Google Group (anyone can join), attach it to the app's
+// Play closed-testing track, and add an entry below. No backend is involved.
 (function () {
-  // Paste the Apps Script web-app URL here after deploying (see beta-signup/SETUP.md).
-  var SCRIPT_URL = 'PASTE_APPS_SCRIPT_WEB_APP_URL_HERE';
-
-  var app = (new URLSearchParams(location.search).get('app') || '').toLowerCase();
-  var $ = function (id) { return document.getElementById(id); };
-  var states = ['loading', 'unknown', 'form', 'done'];
-
-  function show(name) {
-    states.forEach(function (s) {
-      $('state-' + s).classList.toggle('d-none', s !== name);
-    });
-  }
-
-  function showError(msg) {
-    var el = $('form-error');
-    el.textContent = msg;
-    el.classList.remove('d-none');
-  }
-
-  var ERRORS = {
-    invalid_email: 'That email doesn\'t look right. Check it and try again.',
-    busy: 'Lots of people are joining right now. Please try again in a minute.',
-    unknown_app: 'This beta link isn\'t valid.',
-    server_error: 'Something went wrong on our side. Please try again shortly.'
+  var APPS = {
+    biasharathrive: {
+      name: 'BiasharaThrive',
+      icon: '/img/biasharathrive-icon.png',
+      groupUrl: 'https://groups.google.com/g/biasharathrive-testers',
+      optInUrl: 'https://play.google.com/apps/testing/com.biashara.thrive',
+      playUrl: 'https://play.google.com/store/apps/details?id=com.biashara.thrive'
+    }
   };
 
-  if (!app || SCRIPT_URL.indexOf('PASTE_') === 0) { show('unknown'); return; }
+  var key = (new URLSearchParams(location.search).get('app') || '').toLowerCase();
+  var app = Object.prototype.hasOwnProperty.call(APPS, key) ? APPS[key] : null;
+  var $ = function (id) { return document.getElementById(id); };
 
-  fetch(SCRIPT_URL + '?app=' + encodeURIComponent(app))
-    .then(function (r) { return r.json(); })
-    .then(function (info) {
-      if (!info.ok) { show('unknown'); return; }
-      $('app-name').textContent = info.name;
-      $('app-icon').src = info.icon;
-      $('app-icon').alt = info.name;
-      document.title = 'Join the ' + info.name + ' beta - FaidaHQ';
-      show('form');
-    })
-    .catch(function () { show('unknown'); });
+  if (!app) { $('state-unknown').classList.remove('d-none'); return; }
 
-  $('beta-form').addEventListener('submit', function (ev) {
-    ev.preventDefault();
-    $('form-error').classList.add('d-none');
-    var email = $('email').value.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { showError(ERRORS.invalid_email); return; }
-
-    var btn = $('submit-btn');
-    btn.disabled = true;
-    btn.textContent = 'Adding you...';
-
-    // text/plain keeps this a "simple" request, so the browser sends no CORS preflight.
-    fetch(SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ app: app, email: email, website: $('website').value })
-    })
-      .then(function (r) { return r.json(); })
-      .then(function (res) {
-        if (!res.ok) { showError(ERRORS[res.error] || ERRORS.server_error); return; }
-        $('optin-link').href = res.optInUrl;
-        $('play-link').href = res.playUrl;
-        show('done');
-      })
-      .catch(function () { showError('Couldn\'t reach the server. Check your connection and try again.'); })
-      .then(function () {
-        btn.disabled = false;
-        btn.textContent = 'Join the beta';
-      });
-  });
+  $('app-name').textContent = app.name;
+  $('app-icon').src = app.icon;
+  $('app-icon').alt = app.name;
+  $('group-link').href = app.groupUrl;
+  $('optin-link').href = app.optInUrl;
+  $('play-link').href = app.playUrl;
+  document.title = 'Join the ' + app.name + ' beta - FaidaHQ';
+  $('state-steps').classList.remove('d-none');
 })();

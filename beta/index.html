@@ -75,38 +75,21 @@
                <div class="col-lg-6 col-md-8">
                   <div class="bg-white p-4 p-md-5 rounded shadow-sm border text-center">
 
-                     <div id="state-loading"><div class="spinner-border text-primary" role="status"></div></div>
-
                      <div id="state-unknown" class="d-none">
                         <i class="fas fa-link text-secondary fa-2x mb-3"></i>
                         <h3 class="text-dark">This beta link isn't working</h3>
                         <p class="text-muted mb-0">Ask whoever sent it for a fresh link, or write to <a href="mailto:info@faidahq.com">info@faidahq.com</a>.</p>
                      </div>
 
-                     <div id="state-form" class="d-none">
+                     <div id="state-steps" class="d-none">
                         <img id="app-icon" src="" alt="" class="mb-3 rounded" style="height: 72px; width: 72px; object-fit: contain" />
                         <h2 class="text-dark mb-2">Test <span id="app-name"></span></h2>
-                        <p class="text-muted mb-4">Enter the email of the Google account you use on your phone's Play Store. We'll add you to the closed test right away.</p>
-                        <form id="beta-form" novalidate>
-                           <input type="email" id="email" class="form-control form-control-lg mb-3" placeholder="you@gmail.com" autocomplete="email" inputmode="email" required />
-                           <input type="text" name="website" id="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px" />
-                           <div id="form-error" class="alert alert-danger d-none text-start" role="alert"></div>
-                           <button type="submit" id="submit-btn" class="btn btn-secondary w-100 py-3 text-white">Join the beta</button>
-                        </form>
-                        <p class="small text-muted mt-3 mb-0">Use the same Google account as your Play Store, or Google Play won't show you the app. We only use your email to give you test access.</p>
-                     </div>
-
-                     <div id="state-done" class="d-none">
-                        <i class="fas fa-check-circle text-secondary fa-3x mb-3"></i>
-                        <h3 class="text-dark mb-3">You're in. One more step.</h3>
-                        <p class="text-muted">Your count only starts once you accept the invite and install.</p>
-                        <ol class="text-start lh-lg mb-4">
-                           <li>Tap <strong>Become a tester</strong> below and accept.</li>
-                           <li>Then tap <strong>Install the app</strong> and keep it installed during the test.</li>
-                        </ol>
-                        <a id="optin-link" href="#" class="btn btn-secondary w-100 py-3 text-white mb-3" rel="noopener">1. Become a tester</a>
-                        <a id="play-link" href="#" class="btn btn-outline-primary w-100 py-3" rel="noopener">2. Install the app</a>
-                        <p class="small text-muted mt-3 mb-0">If Google Play says the app isn't available, wait a few minutes and try again.</p>
+                        <p class="text-muted mb-4">Three quick steps. Use the Google account that's on your phone's Play Store, and do them in order.</p>
+                        <a id="group-link" href="#" class="btn btn-secondary w-100 py-3 text-white mb-3" rel="noopener">1. Join the tester group</a>
+                        <a id="optin-link" href="#" class="btn btn-secondary w-100 py-3 text-white mb-3" rel="noopener">2. Become a tester</a>
+                        <a id="play-link" href="#" class="btn btn-outline-primary w-100 py-3" rel="noopener">3. Install the app</a>
+                        <p class="small text-muted mt-3 mb-1">On step 1, tap <strong>Join group</strong> and confirm. On step 2, tap <strong>Become a tester</strong>.</p>
+                        <p class="small text-muted mb-0">Your test only counts once you've joined, accepted and installed, so please keep the app installed. If Google Play says the app isn't available, wait a few minutes and try again.</p>
                      </div>
 
                   </div>
