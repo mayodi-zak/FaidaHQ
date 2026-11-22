@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tamu Bay Resort &amp; Kitchen · FaidaHQ demo</title>
+  <meta name="description" content="A demo hotel and restaurant website showing the FaidaHQ Hospitality Assistant chat widget." />
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
+  <link href="/demo/demo.css" rel="stylesheet" />
+</head>
+<body>
+  <div class="demo-ribbon">
+    This is a <strong>demo website</strong> for a fictional resort, built to show the
+    <a href="/hospitality/">FaidaHQ Hospitality Assistant</a>. Try the chat button in the corner.
+  </div>
+
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="Tamu Bay home">
+        <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="19" fill="#0f766e"/><path d="M6 25c5-4 9-4 14 0s9 4 14 0" stroke="#fde68a" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="20" cy="15" r="5" fill="#f59e0b"/></svg>
+        <span>Tamu Bay</span>
+      </a>
+      <button class="menu-btn" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">☰</button>
+      <nav id="nav-links" class="links">
+        <a href="#rooms">Rooms</a>
+        <a href="#dining">Dining</a>
+        <a href="#experiences">Experiences</a>
+        <a href="#offers">Offers</a>
+        <a href="#contact">Contact</a>
+        <button class="btn btn-small" data-book>Book now</button>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-inner">
+        <p class="eyebrow">Diani Beach · Kenya</p>
+        <h1>Barefoot luxury on the Indian Ocean</h1>
+        <p class="lead">42 rooms and villas, Swahili-fusion dining, an infinity pool and the Mvua Spa, all a few steps from white sand.</p>
+        <div class="hero-cta">
+          <button class="btn" data-book>Request a stay</button>
+          <button class="btn btn-ghost" data-ask="Is breakfast included?">Ask our concierge</button>
+        </div>
+      </div>
+      <svg class="waves" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true"><path d="M0 60c240-60 480-60 720 0s480 60 720 0v60H0z" fill="#fffbf3"/></svg>
+    </section>
+
+    <section class="wrap facts" aria-label="Highlights">
+      <div><strong>10 min</strong><span>from Ukunda Airstrip</span></div>
+      <div><strong>24/7</strong><span>reception &amp; concierge</span></div>
+      <div><strong>Free</strong><span>Wi-Fi, parking &amp; kids' club</span></div>
+      <div><strong>M-Pesa</strong><span>cards &amp; cash welcome</span></div>
+    </section>
+
+    <section id="rooms" class="wrap section">
+      <h2>Rooms &amp; villas</h2>
+      <p class="section-lead">All rates include breakfast. Ask Amani, our virtual concierge, anything about your stay.</p>
+      <div class="cards" data-render="room"><p class="loading">Loading rooms…</p></div>
+    </section>
+
+    <section id="dining" class="band">
+      <div class="wrap section">
+        <h2>Pwani Restaurant</h2>
+        <p class="section-lead" data-render-hours="Pwani Restaurant"></p>
+        <div class="menu" data-render="menu_item"><p class="loading">Loading menu…</p></div>
+        <button class="btn" data-book="restaurant">Book a table</button>
+      </div>
+    </section>
+
+    <section id="experiences" class="wrap section">
+      <h2>Facilities &amp; experiences</h2>
+      <div class="cards small" data-render="facility,service"></div>
+    </section>
+
+    <section id="offers" class="band band-accent">
+      <div class="wrap section">
+        <h2>Special offers</h2>
+        <div class="cards small" data-render="offer"></div>
+      </div>
+    </section>
+
+    <section id="faq" class="wrap section">
+      <h2>Good to know</h2>
+      <div class="faq" data-render="faq,policy"></div>
+    </section>
+
+    <section id="contact" class="band">
+      <div class="wrap section contact">
+        <div>
+          <h2>Find us</h2>
+          <p data-field="address"></p>
+          <p><a data-field="phone-link"></a><br /><a data-field="email-link"></a></p>
+          <p class="muted">Reception is open 24 hours.</p>
+        </div>
+        <div class="contact-card">
+          <h3>Questions? Chat with Amani</h3>
+          <p>Our virtual concierge answers instantly, day or night, and passes anything tricky to our team.</p>
+          <button class="btn" data-ask="What time is check-in?">Start a chat</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>© Tamu Bay Resort &amp; Kitchen (fictional). Chat assistant by <a href="/hospitality/">FaidaHQ</a>.</p>
+    </div>
+  </footer>
+
+  <script src="/js/faidahq-config.js"></script>
+  <script src="/demo/demo.js"></script>
+</body>
+</html>
