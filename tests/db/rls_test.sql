@@ -223,4 +223,19 @@ select tests.expect((select count(*) from public.knowledge_suggestions), 1, 'own
 select tests.expect((select count(*) from public.knowledge_suggestions where title = 'Pets?'), 0, 'owner B cannot see A suggestions');
 reset role;
 
+-- 7. Monthly credits: counted by trigger, reset by the cron function ---------------
+reset role;
+select set_config('request.jwt.claim.sub', '', false);
+select tests.expect((select credits_used from public.businesses where id = :'a_id'), 1, 'credits counted from usage rows');
+insert into public.ai_usage (business_id, provider, model, success) values (:'a_id', 'anthropic', 'test', false);
+select tests.expect((select credits_used from public.businesses where id = :'a_id'), 1, 'failed replies cost no credit');
+set role authenticated;
+select set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', false);
+select tests.expect_denied($$update public.businesses set credits_used = 0 where id = '$$ || :'a_id' || $$'$$, 'owner cannot reset own credits');
+select tests.expect_denied('select public.reset_monthly_credits()', 'members cannot run the reset');
+reset role;
+select tests.expect((select public.reset_monthly_credits()), 2, 'reset clears businesses that used credits');
+select tests.expect((select count(*) from public.businesses where credits_used > 0), 0, 'all credits back to zero');
+select tests.expect((select count(*) from public.ai_usage where business_id = :'a_id'), 2, 'usage log is kept after reset');
+
 \echo 'All RLS / isolation checks passed'

@@ -152,7 +152,7 @@ A business can still pick its own provider and model in **Dashboard → AI confi
 
 ## Monthly reply limits and the self-improving assistant
 
-**How the monthly limit "resets".** There is no reset job and no stored balance. Every AI reply is one row in `ai_usage`, and the limit check counts the rows created since the 1st of the current month (UTC, `date_trunc('month', now())`). When the calendar turns over, the count is zero again by itself. The dashboard shows the date it starts again.
+**How the monthly limit resets.** Each business has a `credits_used` counter, increased by a database trigger every time a reply succeeds. A `pg_cron` job (`faidahq-reset-credits`, created by the migration `20261122160000_monthly_credit_reset.sql`) runs `reset_monthly_credits()` at 00:00 UTC on the 1st of every month and sets every counter back to zero. `ai_usage` is kept as the permanent log for analytics. Check the job with `select * from cron.job;` and its history with `select * from cron.job_run_details order by start_time desc limit 5;`. Owners cannot change the counter; only the cron job and platform admins can.
 
 **Assistant learning.** When the assistant escalates a conversation, the `learn` function reads it and drafts knowledge entries (using the staff reply when there is one, and leaving the answer blank when there is not). Drafts appear under *Assistant learning* in the dashboard; an owner or admin approves, edits or dismisses each one, and only approved drafts join the knowledge base. Guest text is treated as untrusted and no draft is ever published automatically. Learning does not use up a business's monthly replies.
 
