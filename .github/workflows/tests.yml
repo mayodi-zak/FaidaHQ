@@ -22,9 +22,22 @@ jobs:
         with:
           deno-version: v2.x
       - name: Edge Function tests
-        run: deno test --allow-env tests/functions
+        run: deno task test:functions
       - name: Database security tests
         env:
           PGHOST: localhost
           PGUSER: postgres
         run: bash tests/db/run.sh
+
+  browser-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno install
+      - name: Install Chromium
+        run: deno task e2e:setup
+      - name: Browser tests
+        run: deno task test:e2e

@@ -235,14 +235,19 @@ FaidaHQWidget.book("restaurant") // open the reservation form ("hotel" or "resta
 
 ## Testing
 
+This project uses **Deno only** (no npm, Node or bun). Install Deno 2, then once:
+
 ```bash
-npm install                # installs the Supabase JS file used by dashboard tests
+deno install               # fetches the test helpers (Playwright, Supabase JS) into node_modules
+deno task e2e:setup        # downloads the Chromium browser used by the browser tests
 ```
+
+All commands are `deno task` entries in `deno.json`: `serve`, `seed`, `test`, `test:functions`, `test:db`, `test:e2e`.
 
 **Edge Function logic** (Deno, no network):
 
 ```bash
-deno test --allow-env tests/functions
+deno task test:functions
 ```
 
 Covers chat, conversation ownership, business isolation in the AI prompt, escalation, reservation validation, rate limits, plan limits, provider adapters, error handling, key encryption, fallback provider and the admin-only key function.
@@ -255,10 +260,10 @@ PGHOST=localhost PGUSER=postgres tests/db/run.sh
 
 Loads the migrations onto a throwaway database and checks that each business only sees its own data, staff can't edit what they shouldn't, owners can't change their own plan, and so on.
 
-**Browser tests** (needs [Playwright](https://playwright.dev) with Chromium):
+**Browser tests** ([Playwright](https://playwright.dev) with Chromium, set up by `deno task e2e:setup`):
 
 ```bash
-node --test tests/e2e/*.test.mjs
+deno task test:e2e
 ```
 
 Covers the widget (demo and live mode against a mocked API, mobile layout, errors, retries, XSS, host-site CSS) and the dashboard/admin pages (against a mocked Supabase API).

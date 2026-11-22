@@ -2,10 +2,11 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
+import { chromium, devices } from "playwright";
 import { startServer } from "./server.mjs";
 
 const require = createRequire(import.meta.url);
-const { chromium, devices } = require("playwright");
+
 const BIZ = "6f1d2c3b-4a5e-4f60-8a7b-9c0d1e2f3a4b";
 let browser, srv;
 

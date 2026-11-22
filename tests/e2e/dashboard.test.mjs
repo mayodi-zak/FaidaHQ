@@ -3,12 +3,13 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
+import { chromium, devices } from "playwright";
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { startServer } from "./server.mjs";
 
 const require = createRequire(import.meta.url);
-const { chromium, devices } = require("playwright");
+
 const UMD_DIR = dirname(require.resolve("@supabase/supabase-js/dist/umd/supabase.js"));
 
 const USER = { id: "11111111-1111-4111-8111-111111111111", email: "owner@tamubay.example", aud: "authenticated", role: "authenticated" };
@@ -258,7 +259,8 @@ test("admin: AI providers page saves keys without ever showing them again", asyn
   await page.locator('#defaults select[name="default_provider"]').selectOption("openai");
   await page.locator('#defaults select[name="fallback_provider"]').selectOption("gemini");
   await page.getByRole("button", { name: "Save choice" }).click();
-  await page.waitForFunction(() => document.querySelector(".toast"));
+  // Wait for the request itself: an earlier "Key saved" toast may still be on screen.
+  for (let i = 0; i < 50 && !writes.some((w) => w.fn && w.body.action === "set_defaults"); i++) await page.waitForTimeout(100);
   const d = writes.find((w) => w.fn && w.body.action === "set_defaults").body;
   assert.deepEqual([d.default_provider, d.fallback_provider], ["openai", "gemini"]);
 

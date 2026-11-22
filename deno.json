@@ -1,3 +1,16 @@
 {
-  "nodeModulesDir": "none"
+  "tasks": {
+    "seed": "deno run --allow-read --allow-write scripts/build-seed.mjs",
+    "test": "deno task test:functions && deno task test:e2e",
+    "test:functions": "deno test --allow-env tests/functions",
+    "test:db": "bash tests/db/run.sh",
+    "test:e2e": "deno test --allow-all tests/e2e/",
+    "e2e:setup": "deno run --allow-all npm:playwright install chromium",
+    "serve": "deno run --allow-net --allow-read tests/e2e/serve.mjs"
+  },
+  "imports": {
+    "playwright": "npm:playwright@^1.48.0",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.45.4"
+  },
+  "nodeModulesDir": "auto"
 }

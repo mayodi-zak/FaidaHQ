@@ -47,7 +47,7 @@ admin/                                  (each business sees only its own rows)
 See it working with no setup at all:
 
 ```bash
-npm run serve        # then open http://localhost:8080/demo/
+deno task serve        # then open http://localhost:8080/demo/
 ```
 
 Without Supabase keys, the demo widget runs in **demo mode**: it answers from the sample data in `demo/demo-business.json` using simple keyword matching, and says so in a yellow banner. Once you connect Supabase and an AI key, the same widget uses the real AI.
@@ -75,10 +75,11 @@ The business owner can copy this exact snippet (with their ID filled in) from **
 ## Tests
 
 ```bash
-npm install              # once: test helper for the dashboard tests
-npm run test:functions   # Edge Function logic (Deno)
-npm run test:db          # database security / business isolation (needs PostgreSQL)
-npm run test:e2e         # browser tests for widget, dashboard, admin (needs Playwright)
+deno install             # once: fetches the test helpers (Playwright, Supabase JS)
+deno task e2e:setup      # once: downloads the Chromium browser for the browser tests
+deno task test:functions # Edge Function logic
+deno task test:db        # database security / business isolation (needs PostgreSQL)
+deno task test:e2e       # browser tests for widget, dashboard, admin
 ```
 
 Details in [docs/SETUP.md](docs/SETUP.md#testing).
