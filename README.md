@@ -85,4 +85,4 @@ Details in [docs/SETUP.md](docs/SETUP.md#testing).
 
 ## Licence
 
-Website template by [HTML Codex](https://htmlcodex.com) (see `LICENSE.txt` and `READ-ME.txt`).
+Website template by [HTML Codex](https://htmlcodex.com) (see `LICENSE.txt` and `docs/TEMPLATE-CREDITS.txt`).
