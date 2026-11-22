@@ -234,6 +234,7 @@ select set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111
 select tests.expect_denied($$update public.businesses set credits_used = 0 where id = '$$ || :'a_id' || $$'$$, 'owner cannot reset own credits');
 select tests.expect_denied('select public.reset_monthly_credits()', 'members cannot run the reset');
 reset role;
+select set_config('request.jwt.claim.sub', '', false);
 select tests.expect((select public.reset_monthly_credits()), 2, 'reset clears businesses that used credits');
 select tests.expect((select count(*) from public.businesses where credits_used > 0), 0, 'all credits back to zero');
 select tests.expect((select count(*) from public.ai_usage where business_id = :'a_id'), 2, 'usage log is kept after reset');
