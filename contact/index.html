@@ -175,9 +175,14 @@
                            role="alert"
                         >
                            <i class="fas fa-check-circle me-2"></i>
-                           Your mail client has been opened with your message pre-filled. Just hit <strong>Send</strong>!
+                           Thank you! Your message has been sent and we'll reply by email within one business day.
                         </div>
+                        <div id="contact-error" class="alert alert-danger d-none mb-4" role="alert"></div>
                         <form id="contact-form" novalidate>
+                           <!-- Spam trap: hidden from people, bots tend to fill it in -->
+                           <div style="position:absolute;left:-9999px" aria-hidden="true">
+                              <label>Website <input id="contact-website" type="text" tabindex="-1" autocomplete="off" /></label>
+                           </div>
                            <div class="mb-4">
                               <input
                                  id="contact-name"
@@ -254,71 +259,57 @@
       <script src="/js/components.js"></script>
       <script src="/js/main.js"></script>
 
-      <!-- Contact Form: mailto: handler (no backend required) -->
+      <script src="/js/faidahq-config.js"></script>
+      <!-- Contact form: sends to the FaidaHQ `contact` function, which saves the message and emails the team -->
       <script>
         (function () {
           'use strict';
+          var cfg = window.FaidaHQConfig || {};
+          var form = document.getElementById('contact-form');
+          var button = document.getElementById('contact-submit');
+          var ok = document.getElementById('contact-success');
+          var fail = document.getElementById('contact-error');
 
-          var RECIPIENT = 'isaacmayodi5@gmail.com';
+          function val(id) { return document.getElementById(id).value.trim(); }
+          function showError(msg) { fail.textContent = msg; fail.classList.remove('d-none'); }
 
-          document
-            .getElementById('contact-form')
-            .addEventListener('submit', function (e) {
-              e.preventDefault();
+          form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            ok.classList.add('d-none');
+            fail.classList.add('d-none');
 
-              var name    = document.getElementById('contact-name').value.trim();
-              var email   = document.getElementById('contact-email').value.trim();
-              var subject = document.getElementById('contact-subject').value.trim();
-              var message = document.getElementById('contact-message').value.trim();
+            var missing = false;
+            form.querySelectorAll('[required]').forEach(function (el) {
+              var bad = !el.value.trim();
+              el.classList.toggle('is-invalid', bad);
+              if (bad) missing = true;
+            });
+            if (missing) return;
 
-              /* Basic client-side validation */
-              if (!name || !email || !subject || !message) {
-                var inputs = document.querySelectorAll('#contact-form [required]');
-                inputs.forEach(function (el) {
-                  if (!el.value.trim()) {
-                    el.classList.add('is-invalid');
-                  }
-                });
-                return;
-              }
+            if (!cfg.functionsUrl) return showError('The form is not available right now. Please email info@faidahq.com.');
 
-              /* Remove any previous invalid highlights */
-              document.querySelectorAll('#contact-form .is-invalid').forEach(function (el) {
-                el.classList.remove('is-invalid');
+            button.disabled = true;
+            fetch(cfg.functionsUrl + '/contact', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: val('contact-name'), email: val('contact-email'),
+                subject: val('contact-subject'), message: val('contact-message'),
+                website: val('contact-website')
+              })
+            }).then(function (res) {
+              return res.json().catch(function () { return {}; }).then(function (data) {
+                if (!res.ok) throw new Error(data.message || 'Something went wrong. Please try again.');
+                form.reset();
+                ok.classList.remove('d-none');
               });
+            }).catch(function (err) {
+              showError((err && err.message) || 'Could not send your message. Please email info@faidahq.com.');
+            }).then(function () { button.disabled = false; });
+          });
 
-              /*
-               * Build a structured email body.
-               * %0D%0A encodes CRLF line breaks which most mail clients honour.
-               */
-              var body =
-                'Name: ' + name + '%0D%0A' +
-                'Email: ' + email + '%0D%0A' +
-                '%0D%0A' +
-                'Message:%0D%0A' +
-                encodeURIComponent(message);
-
-              var mailtoURL =
-                'mailto:' + RECIPIENT +
-                '?subject=' + encodeURIComponent(subject) +
-                '&body='    + body;
-
-              /* Open the native mail client */
-              window.location.href = mailtoURL;
-
-              /* Show confirmation banner */
-              var banner = document.getElementById('contact-success');
-              banner.classList.remove('d-none');
-              setTimeout(function () {
-                banner.classList.add('d-none');
-              }, 8000);
-            });
-
-          /* Clear invalid state on re-type */
-          document.querySelectorAll('#contact-form [required]').forEach(function (el) {
-            el.addEventListener('input', function () {
-              this.classList.remove('is-invalid');
-            });
+          form.querySelectorAll('[required]').forEach(function (el) {
+            el.addEventListener('input', function () { this.classList.remove('is-invalid'); });
           });
         })();
       </script>

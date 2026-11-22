@@ -239,4 +239,23 @@ select tests.expect((select public.reset_monthly_credits()), 2, 'reset clears bu
 select tests.expect((select count(*) from public.businesses where credits_used > 0), 0, 'all credits back to zero');
 select tests.expect((select count(*) from public.ai_usage where business_id = :'a_id'), 2, 'usage log is kept after reset');
 
+-- 8. Website contact messages: platform admins only -------------------------------
+reset role;
+select set_config('request.jwt.claim.sub', '', false);
+insert into public.contact_messages (name, email, subject, message) values ('Visitor', 'v@example.com', 'Hi', 'Hello');
+set role authenticated;
+select set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', false);
+select tests.expect((select count(*) from public.contact_messages), 0, 'business owners cannot read website messages');
+select tests.expect_denied($$update public.contact_messages set status = 'handled'$$, 'business owners cannot change website messages');
+select tests.expect_denied($$insert into public.contact_messages (name, email, subject, message) values ('x', 'x@x.co', 'x', 'x')$$, 'members cannot write website messages directly');
+set role anon;
+select set_config('request.jwt.claim.sub', '', false);
+select tests.expect_denied('select 1 from public.contact_messages', 'anon cannot read website messages');
+set role authenticated;
+select set_config('request.jwt.claim.sub', '44444444-4444-4444-8444-444444444444', false);
+select tests.expect((select count(*) from public.contact_messages), 1, 'platform admin reads website messages');
+update public.contact_messages set status = 'handled';
+select tests.expect((select count(*) from public.contact_messages where status = 'handled'), 1, 'platform admin marks a message handled');
+reset role;
+
 \echo 'All RLS / isolation checks passed'

@@ -29,7 +29,7 @@
   function render(session) {
     app.innerHTML = '<div class="layout"><aside class="sidebar"><div class="side-brand"><img src="/img/logo-white.png" alt="FaidaHQ"></div>' +
       '<div class="side-biz"><strong class="biz-name">Platform admin</strong></div><nav>' +
-      '<a href="#businesses" data-nav="businesses">🏢 Businesses</a><a href="#ai" data-nav="ai">🤖 AI providers</a><a href="/dashboard/">📊 Business dashboard</a></nav>' +
+      '<a href="#businesses" data-nav="businesses">🏢 Businesses</a><a href="#messages" data-nav="messages">✉️ Website messages</a><a href="#ai" data-nav="ai">🤖 AI providers</a><a href="/dashboard/">📊 Business dashboard</a></nav>' +
       '<div class="side-foot"><span>' + esc(session.user.email) + '</span><button class="link light" id="so">Sign out</button></div></aside>' +
       '<div class="main"><header class="topbar"><h1 id="title">Businesses</h1></header><section class="view" id="view"><p class="muted">Loading…</p></section></div></div>';
     $("#so").onclick = function () { FQ.db.auth.signOut().then(function () { location.reload(); }); };
@@ -38,11 +38,30 @@
   }
 
   function route() {
-    var page = location.hash === "#ai" ? "ai" : "businesses";
+    var page = location.hash === "#ai" ? "ai" : location.hash === "#messages" ? "messages" : "businesses";
     $$("[data-nav]").forEach(function (a) { a.classList.toggle("active", a.dataset.nav === page); });
-    $("#title").textContent = page === "ai" ? "AI providers" : "Businesses";
+    $("#title").textContent = page === "ai" ? "AI providers" : page === "messages" ? "Website messages" : "Businesses";
     $("#view").innerHTML = '<p class="muted">Loading…</p>';
-    if (page === "ai") loadAi(); else load();
+    if (page === "ai") loadAi(); else if (page === "messages") loadMessages(); else load();
+  }
+
+  // Messages sent from the contact page on faidahq.com.
+  function loadMessages() {
+    FQ.q(FQ.db.from("contact_messages").select("*").order("created_at", { ascending: false }).limit(200), "Load messages").then(function (rows) {
+      var view = $("#view");
+      view.innerHTML = '<div class="card">' + (rows.length ? rows.map(function (m) {
+        return '<div class="suggestion"><strong>' + esc(m.subject) + '</strong> <span class="pill ' + (m.status === "new" ? "warning" : "good") + '">' + esc(m.status) + "</span>" +
+          '<p class="muted">' + esc(m.name) + ' · <a href="mailto:' + esc(m.email) + '?subject=' + encodeURIComponent("Re: " + m.subject) + '">' + esc(m.email) + "</a> · " + FQ.date(m.created_at, true) +
+          (m.notified ? "" : " · alert email not sent") + "</p>" +
+          '<p style="white-space:pre-wrap">' + esc(m.message) + "</p>" +
+          '<button class="btn ghost" data-toggle="' + m.id + '" data-to="' + (m.status === "new" ? "handled" : "new") + '">' + (m.status === "new" ? "Mark handled" : "Reopen") + "</button></div>";
+      }).join("") : '<p class="empty">No messages yet.</p>') + "</div>";
+      $$("[data-toggle]", view).forEach(function (b) {
+        b.onclick = function () {
+          FQ.q(FQ.db.from("contact_messages").update({ status: b.dataset.to }).eq("id", b.dataset.toggle), "Update").then(loadMessages);
+        };
+      });
+    });
   }
 
   function load() {

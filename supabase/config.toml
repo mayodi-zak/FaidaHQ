@@ -35,3 +35,7 @@ verify_jwt = true
 # and the function authenticates both callers itself.
 [functions.learn]
 verify_jwt = false
+
+# Public: the contact form on the main website (validated and rate limited inside).
+[functions.contact]
+verify_jwt = false
