@@ -141,9 +141,9 @@
                            <h4 class="text-primary">Email Us</h4>
                            <a
                               class="h5"
-                              href="mailto:info@faidahq.com"
+                              href="mailto:support@faidahq.com"
                               target="_blank"
-                              >info@faidahq.com</a
+                              >support@faidahq.com</a
                            >
                         </div>
                      </div>
@@ -286,7 +286,7 @@
             });
             if (missing) return;
 
-            if (!cfg.functionsUrl) return showError('The form is not available right now. Please email info@faidahq.com.');
+            if (!cfg.functionsUrl) return showError('The form is not available right now. Please email support@faidahq.com.');
 
             button.disabled = true;
             fetch(cfg.functionsUrl + '/contact', {
@@ -304,7 +304,7 @@
                 ok.classList.remove('d-none');
               });
             }).catch(function (err) {
-              showError((err && err.message) || 'Could not send your message. Please email info@faidahq.com.');
+              showError((err && err.message) || 'Could not send your message. Please email support@faidahq.com.');
             }).then(function () { button.disabled = false; });
           });
 

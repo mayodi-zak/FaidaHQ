@@ -27,7 +27,7 @@ class FaidahNavbar extends HTMLElement {
           <div class="d-flex justify-content-between topbar">
             <div class="top-info">
               <small class="me-3 text-white-50"><a href="#"><i class="fas fa-map-marker-alt me-2 text-secondary"></i></a>Nairobi, Kenya</small>
-              <small class="me-3 text-white-50"><a href="#"><i class="fas fa-envelope me-2 text-secondary"></i></a>info@faidahq.com</small>
+              <small class="me-3 text-white-50"><a href="#"><i class="fas fa-envelope me-2 text-secondary"></i></a>support@faidahq.com</small>
             </div>
             <div id="note" class="text-secondary d-none d-xl-flex"><small>Your business HQ. Every profit, every day.</small></div>
             <div class="top-link">
@@ -64,7 +64,7 @@ class FaidahNavbar extends HTMLElement {
               </div>
               <div class="d-flex flex-column pe-4 border-end">
                 <span class="text-white-50">Got questions?</span>
-                <span class="text-secondary">info@faidahq.com</span>
+                <span class="text-secondary">support@faidahq.com</span>
               </div>
               <div class="d-flex align-items-center justify-content-center ms-4">
                 <a href="#"><i class="bi bi-search text-white fa-2x"></i></a>
@@ -118,7 +118,7 @@ class FaidahFooter extends HTMLElement {
               <div class="text-white mt-4 d-flex flex-column contact-link">
                 <a href="#" class="pb-3 text-light border-bottom border-primary"><i class="fas fa-map-marker-alt text-secondary me-2"></i>Nairobi, Kenya</a>
                 <a href="tel:+254741984517" class="py-3 text-light border-bottom border-primary"><i class="fas fa-phone-alt text-secondary me-2"></i>+254 741 984 517</a>
-                <a href="mailto:info@faidahq.com" class="py-3 text-light border-bottom border-primary"><i class="fas fa-envelope text-secondary me-2"></i>info@faidahq.com</a>
+                <a href="mailto:support@faidahq.com" class="py-3 text-light border-bottom border-primary"><i class="fas fa-envelope text-secondary me-2"></i>support@faidahq.com</a>
               </div>
             </div>
           </div>
