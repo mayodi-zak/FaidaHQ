@@ -87,14 +87,26 @@
   }
   function validHex(c, fallback) { return /^#[0-9a-f]{3,8}$/i.test(c || "") ? c : fallback; }
 
+  // Optional: a host page (our admin preview) may define window.FaidaHQAuth(), returning a
+  // promise of a sign-in token. It is sent only so private test assistants can verify an admin.
+  function authToken() {
+    try {
+      return typeof window.FaidaHQAuth === "function" ? Promise.resolve(window.FaidaHQAuth()).catch(function () { return null; }) : Promise.resolve(null);
+    } catch (e) { return Promise.resolve(null); }
+  }
+
   function request(method, path, body) {
     var controller = typeof AbortController !== "undefined" ? new AbortController() : null;
     var timer = setTimeout(function () { if (controller) controller.abort(); }, 45000);
-    return fetch(OPTS.apiUrl + path, {
-      method: method,
-      headers: body ? { "content-type": "application/json" } : {},
-      body: body ? JSON.stringify(body) : undefined,
-      signal: controller ? controller.signal : undefined,
+    return authToken().then(function (token) {
+      var headers = body ? { "content-type": "application/json" } : {};
+      if (token) headers.authorization = "Bearer " + token;
+      return fetch(OPTS.apiUrl + path, {
+        method: method,
+        headers: headers,
+        body: body ? JSON.stringify(body) : undefined,
+        signal: controller ? controller.signal : undefined,
+      });
     }).then(function (res) {
       clearTimeout(timer);
       return res.json().catch(function () { return {}; }).then(function (data) {

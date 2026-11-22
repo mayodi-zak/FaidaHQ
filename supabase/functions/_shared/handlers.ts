@@ -16,6 +16,10 @@ export interface Deps {
   /** Decrypted provider keys + default/fallback choices from the admin panel. */
   platformAi?: () => Promise<PlatformAi>;
   now?: () => Date;
+  /** Signed-in user making this request (from their verified token), if any. */
+  userId?: string | null;
+  /** Is this user a platform admin or a member of this business? */
+  canTest?: (userId: string, businessId: string) => Promise<boolean>;
 }
 
 export const LIMITS = {
@@ -31,6 +35,13 @@ async function loadActiveBusiness(deps: Deps, businessId: string, origin: string
   const business = await deps.repo.getBusiness(businessId);
   if (!business) throw new HttpError(404, "not_found", "This assistant could not be found.");
   if (business.status !== "active") throw new HttpError(403, "unavailable", "This assistant is currently unavailable.");
+  // Private (test/demo) assistants: only a signed-in admin or member may use them.
+  if (business.public_chat === false) {
+    if (!deps.userId) throw new HttpError(401, "sign_in_required", "This assistant is private. Please sign in as an administrator.");
+    if (!deps.canTest || !(await deps.canTest(deps.userId, businessId))) {
+      throw new HttpError(403, "private_assistant", "You do not have access to this assistant.");
+    }
+  }
   if (!originAllowed(origin, business.allowed_origins)) {
     throw new HttpError(403, "origin_not_allowed", "This website is not allowed to use this assistant.");
   }

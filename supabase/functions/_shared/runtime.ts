@@ -147,3 +147,21 @@ export function learnStore(db: SupabaseClient = serviceClient()): LearnStore {
     },
   };
 }
+
+/** Public-endpoint dependencies plus the signed-in user (if the request carries a valid token). */
+export async function requestDeps(req: Request): Promise<Deps> {
+  const base = runtimeDeps();
+  const userId = req.headers.get("authorization") ? await userIdFromRequest(req) : null;
+  return {
+    ...base,
+    userId,
+    async canTest(uid, businessId) {
+      const db = serviceClient();
+      const [admin, member] = await Promise.all([
+        db.from("platform_admins").select("user_id").eq("user_id", uid).maybeSingle(),
+        db.from("business_members").select("user_id").eq("user_id", uid).eq("business_id", businessId).maybeSingle(),
+      ]);
+      return Boolean(admin.data || member.data);
+    },
+  };
+}

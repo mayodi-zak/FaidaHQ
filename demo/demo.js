@@ -4,12 +4,11 @@
   "use strict";
   var cfg = window.FaidaHQConfig || {};
 
-  // 1. Load the chat widget — live backend if configured, otherwise demo mode.
+  // 1. Load the chat widget in offline demo mode. This page is public, so it never calls
+  // the live AI (nobody can spend AI credits here). Admins test the real assistant from /admin/.
   var s = document.createElement("script");
   s.src = "/widget.js";
-  s.setAttribute("data-business-id", cfg.demoBusinessId || "");
-  if (cfg.functionsUrl) s.setAttribute("data-api-url", cfg.functionsUrl);
-  else s.setAttribute("data-demo", "true");
+  s.setAttribute("data-demo", "true");
   s.setAttribute("data-demo-src", "/demo/demo-business.json");
   document.body.appendChild(s);
 

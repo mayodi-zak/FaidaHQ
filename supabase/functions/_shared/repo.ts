@@ -8,6 +8,8 @@ export interface BusinessRow extends BusinessContext {
   slug: string;
   status: "pending" | "active" | "suspended";
   allowed_origins: string[];
+  /** false = only signed-in platform admins / members of the business may chat. */
+  public_chat?: boolean;
   branding: Record<string, unknown> & { assistant_name?: string };
 }
 
@@ -64,7 +66,7 @@ function must<T>(res: { data: T; error: { message: string } | null }, what: stri
 }
 
 const BUSINESS_FIELDS =
-  "id, slug, name, type, description, email, phone, whatsapp, website, address, city, country, timezone, currency, branding, allowed_origins, status";
+  "id, slug, name, type, description, email, phone, whatsapp, website, address, city, country, timezone, currency, branding, allowed_origins, status, public_chat";
 
 export function supabaseRepo(db: SupabaseClient): Repo {
   return {

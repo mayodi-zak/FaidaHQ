@@ -187,3 +187,28 @@ Deno.test("widget config: returns branding and hides internal fields", async () 
   assert(!("allowed_origins" in cfg.business));
   assert(!("status" in cfg.business));
 });
+
+Deno.test("private assistant: only a signed-in admin/member may chat, enquire or load it", async () => {
+  const { a, s, deps, calls } = setup();
+  a.public_chat = false;
+  const body = { business_id: a.id, visitor_id: VISITOR, message: "hi" };
+  // Anonymous visitor (anyone on the internet): refused, and no AI call is made.
+  await assertRejects(() => chat(deps, body, null, "1"), HttpError, "private");
+  await assertRejects(() => widgetConfig(deps, { business_id: a.id }, null), HttpError, "private");
+  await assertRejects(() => submitEnquiry(deps, { business_id: a.id, visitor_id: VISITOR, type: "general", name: "x", email: "x@y.co", message: "m" }, null, "1"), HttpError, "private");
+  // Signed in, but not an admin/member of this business: refused.
+  await assertRejects(() => chat({ ...deps, userId: "stranger", canTest: async () => false }, body, null, "1"), HttpError, "access");
+  assertEquals(calls.length, 0);
+  assertEquals(s.usage.length, 0);
+  // Signed-in admin/member: allowed.
+  const res = await chat({ ...deps, userId: "admin", canTest: async (u) => u === "admin" }, body, null, "1");
+  assert(res.reply.length > 0);
+  assertEquals(calls.length, 1);
+});
+
+Deno.test("public assistants stay open to anonymous guests", async () => {
+  const { a, deps } = setup();
+  assertEquals(a.public_chat, undefined);
+  const res = await chat(deps, { business_id: a.id, visitor_id: VISITOR, message: "hi" }, null, "1");
+  assert(res.reply.length > 0);
+});

@@ -258,4 +258,17 @@ update public.contact_messages set status = 'handled';
 select tests.expect((select count(*) from public.contact_messages where status = 'handled'), 1, 'platform admin marks a message handled');
 reset role;
 
+-- 9. Private assistants: owners cannot flip public_chat -------------------------------
+reset role;
+select set_config('request.jwt.claim.sub', '', false);
+select tests.expect((select count(*) from public.businesses where id = '6f1d2c3b-4a5e-4f60-8a7b-9c0d1e2f3a4b' and public_chat = false), 1, 'demo business is private by default');
+update public.businesses set public_chat = false where id = :'a_id';
+set role authenticated;
+select set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', false);
+select tests.expect_denied($$update public.businesses set public_chat = true where id = '$$ || :'a_id' || $$'$$, 'owner cannot make a private assistant public');
+select set_config('request.jwt.claim.sub', '44444444-4444-4444-8444-444444444444', false);
+update public.businesses set public_chat = true where id = :'a_id';
+select tests.expect((select count(*) from public.businesses where id = :'a_id' and public_chat), 1, 'platform admin can change public_chat');
+reset role;
+
 \echo 'All RLS / isolation checks passed'
