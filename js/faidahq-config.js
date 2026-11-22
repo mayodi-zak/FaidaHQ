@@ -12,9 +12,9 @@
 // While they are empty, the demo website runs the chat widget in offline demo
 // mode, and the dashboards show setup instructions.
 window.FaidaHQConfig = {
-  supabaseUrl: "",
-  supabaseAnonKey: "",
-  functionsUrl: "",
+  supabaseUrl: "https://odcsufhzdxxttfuhctjs.supabase.co",
+  supabaseAnonKey: "sb_publishable_OWbxQb7jzn_aMc6t_4DmPg_rrz7pA2G",
+  functionsUrl: "https://odcsufhzdxxttfuhctjs.supabase.co/functions/v1",
   // The demo business created by supabase/seed.sql
   demoBusinessId: "6f1d2c3b-4a5e-4f60-8a7b-9c0d1e2f3a4b",
 };

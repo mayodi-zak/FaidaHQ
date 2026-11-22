@@ -3,13 +3,18 @@
 import { HttpError, originAllowed } from "./http.ts";
 import * as v from "./validate.ts";
 import { buildSystemPrompt, parseAssistantReply } from "./prompt.ts";
-import { type AiResult, generateReply, type ProviderConfig, resolveProviderConfig, type AiRequest } from "./ai.ts";
+import {
+  AiConfigError, type AiRequest, type AiResult, generateReply, type PlatformAi, type ProviderConfig,
+  resolveFallbackConfig, resolveProviderConfig,
+} from "./ai.ts";
 import type { BusinessRow, Repo } from "./repo.ts";
 
 export interface Deps {
   repo: Repo;
   env: (name: string) => string | undefined;
   ai?: (cfg: ProviderConfig, req: AiRequest) => Promise<AiResult>;
+  /** Decrypted provider keys + default/fallback choices from the admin panel. */
+  platformAi?: () => Promise<PlatformAi>;
   now?: () => Date;
 }
 
@@ -135,7 +140,17 @@ export async function chat(deps: Deps, body: Record<string, unknown>, origin: st
     deps.repo.recentMessages(convo.id, businessId, LIMITS.historyMessages),
   ]);
 
-  const cfg = resolveProviderConfig({ provider: settings?.provider, model: settings?.model }, deps.env);
+  const platform = deps.platformAi ? await deps.platformAi() : { credentials: {} };
+  let primary: ProviderConfig | null = null;
+  let configError: unknown = null;
+  try {
+    primary = resolveProviderConfig({ provider: settings?.provider, model: settings?.model }, deps.env, platform);
+  } catch (err) {
+    if (!(err instanceof AiConfigError)) throw err;
+    configError = err;
+  }
+  const fallback = resolveFallbackConfig(primary?.provider ?? null, deps.env, platform);
+  if (!primary && !fallback) throw configError;
   const system = buildSystemPrompt(business, knowledge, settings ?? {}, v.todayIn(business.timezone, now));
 
   // Map stored history to alternating user/assistant turns (staff replies are
@@ -151,22 +166,36 @@ export async function chat(deps: Deps, body: Record<string, unknown>, origin: st
   while (turns.length && turns[0].role !== "user") turns.shift();
   if (!turns.length || turns[turns.length - 1].role !== "user") turns.push({ role: "user", content: message });
 
-  const started = Date.now();
-  let result: AiResult;
-  try {
-    result = await (deps.ai ?? generateReply)(cfg, {
-      system,
-      messages: turns,
-      maxOutputTokens: settings?.max_output_tokens ?? 600,
-      temperature: Number(settings?.temperature ?? 0.3),
-    });
-  } catch (err) {
-    await deps.repo.logUsage({
-      business_id: businessId, conversation_id: convo.id, provider: cfg.provider, model: cfg.model,
-      input_tokens: 0, output_tokens: 0, latency_ms: Date.now() - started, success: false,
-    });
+  const request: AiRequest = {
+    system,
+    messages: turns,
+    maxOutputTokens: settings?.max_output_tokens ?? 600,
+    temperature: Number(settings?.temperature ?? 0.3),
+  };
+  const call = deps.ai ?? generateReply;
+
+  // Try the main provider, then the fallback provider if the main one fails.
+  let result: AiResult | null = null;
+  let started = Date.now();
+  let lastError: unknown = configError;
+  for (const cfg of [primary, fallback]) {
+    if (!cfg) continue;
+    started = Date.now();
+    try {
+      result = await call(cfg, request);
+      break;
+    } catch (err) {
+      lastError = err;
+      console.error(`AI provider ${cfg.provider} failed${cfg === primary && fallback ? ", trying fallback" : ""}`);
+      await deps.repo.logUsage({
+        business_id: businessId, conversation_id: convo.id, provider: cfg.provider, model: cfg.model,
+        input_tokens: 0, output_tokens: 0, latency_ms: Date.now() - started, success: false,
+      });
+    }
+  }
+  if (!result) {
     await deps.repo.updateConversation(convo.id, businessId, { message_count: count, last_message_at: now.toISOString() });
-    throw err;
+    throw lastError;
   }
 
   await deps.repo.logUsage({

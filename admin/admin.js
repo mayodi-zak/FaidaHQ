@@ -28,11 +28,21 @@
 
   function render(session) {
     app.innerHTML = '<div class="layout"><aside class="sidebar"><div class="side-brand"><img src="/img/logo-white.png" alt="FaidaHQ"></div>' +
-      '<div class="side-biz"><strong class="biz-name">Platform admin</strong></div><nav><a class="active" href="#">🏢 Businesses</a><a href="/dashboard/">📊 Business dashboard</a></nav>' +
+      '<div class="side-biz"><strong class="biz-name">Platform admin</strong></div><nav>' +
+      '<a href="#businesses" data-nav="businesses">🏢 Businesses</a><a href="#ai" data-nav="ai">🤖 AI providers</a><a href="/dashboard/">📊 Business dashboard</a></nav>' +
       '<div class="side-foot"><span>' + esc(session.user.email) + '</span><button class="link light" id="so">Sign out</button></div></aside>' +
-      '<div class="main"><header class="topbar"><h1>Businesses</h1></header><section class="view" id="view"><p class="muted">Loading…</p></section></div></div>';
+      '<div class="main"><header class="topbar"><h1 id="title">Businesses</h1></header><section class="view" id="view"><p class="muted">Loading…</p></section></div></div>';
     $("#so").onclick = function () { FQ.db.auth.signOut().then(function () { location.reload(); }); };
-    load();
+    window.onhashchange = route;
+    route();
+  }
+
+  function route() {
+    var page = location.hash === "#ai" ? "ai" : "businesses";
+    $$("[data-nav]").forEach(function (a) { a.classList.toggle("active", a.dataset.nav === page); });
+    $("#title").textContent = page === "ai" ? "AI providers" : "Businesses";
+    $("#view").innerHTML = '<p class="muted">Loading…</p>';
+    if (page === "ai") loadAi(); else load();
   }
 
   function load() {
@@ -124,6 +134,107 @@
           });
         }).then(function () { FQ.toast("Business created"); load(); });
       }, "Create");
+  }
+
+  // ---------------------------------------------------------------------------
+  // AI providers. Keys are sent once to the admin-ai-keys Edge Function, which
+  // checks this user is a platform admin, encrypts the key and stores it. The
+  // browser can never read a saved key back: it only gets "…abcd" hints.
+
+  function keys(body) {
+    return FQ.db.functions.invoke("admin-ai-keys", { body: body }).then(function (r) {
+      if (!r.error) return r.data;
+      var ctx = r.error.context;
+      var read = ctx && typeof ctx.json === "function" ? ctx.json().catch(function () { return {}; }) : Promise.resolve({});
+      return read.then(function (j) { throw new Error((j && j.message) || r.error.message || "Request failed"); });
+    });
+  }
+
+  var MODEL_HINTS = {
+    anthropic: "e.g. claude-opus-5-5 or claude-haiku-5-5 (empty = claude-opus-5-5)",
+    openai: "e.g. gpt-5-mini (required)",
+    gemini: "e.g. gemini-2.5-flash (required)",
+    openai_compatible: "the model name your service uses (required)",
+  };
+
+  function loadAi() {
+    keys({ action: "list" }).then(drawAi).catch(function (e) {
+      $("#view").innerHTML = '<div class="card"><h2>Could not load AI providers</h2><p>' + esc(e.message) + "</p>" +
+        '<p class="muted">Make sure the <code>admin-ai-keys</code> function is deployed (see docs/SETUP.md).</p></div>';
+    });
+  }
+
+  function statusPill(p) {
+    if (p.key_saved) return '<span class="pill good" style="text-transform:none">Key saved ' + esc(p.key_hint || "") + "</span>";
+    if (p.env_configured) return '<span class="pill info" style="text-transform:none">Using server secret</span>';
+    return '<span class="pill" style="text-transform:none">Not set</span>';
+  }
+
+  function drawAi(data) {
+    var provs = data.providers;
+    var choices = provs.map(function (p) { return [p.provider, p.label]; });
+    var envDefault = data.env_default_provider ? " (AI_PROVIDER secret: " + data.env_default_provider + ")" : " (Anthropic)";
+    $("#view").innerHTML =
+      (data.encryption_ready ? "" :
+        '<div class="card" style="border-color:var(--warning)"><h2>⚠️ Encryption key missing</h2><p>Before you can save keys, set the secret <code>FAIDAHQ_ENCRYPTION_KEY</code> once:</p>' +
+        '<pre>supabase secrets set FAIDAHQ_ENCRYPTION_KEY="$(openssl rand -base64 32)"</pre><p class="muted">Keep a private copy. If it changes, saved keys must be entered again.</p></div>') +
+      '<div class="card"><h2>Which AI answers guests</h2><form id="defaults" class="form-grid">' +
+      '<label>Main provider<select name="default_provider">' + options([["", "Server setting" + envDefault]].concat(choices), data.default_provider || "") + "</select></label>" +
+      '<label>Fallback provider (used if the main one fails)<select name="fallback_provider">' + options([["", "None"]].concat(choices), data.fallback_provider || "") + "</select></label>" +
+      '<div class="full"><button class="btn" type="submit">Save choice</button></div></form>' +
+      '<p class="muted">A business can still choose its own provider and model in its dashboard (AI configuration).</p></div>' +
+      '<div class="card"><h2>API keys</h2><p class="muted">Keys are encrypted on the server and can never be shown again, only replaced or deleted.</p>' +
+      table(["Provider", "Status", "Default model", ""], provs.map(function (p) {
+        return ["<strong>" + esc(p.label) + "</strong>" + (p.base_url ? '<br><small class="muted">' + esc(p.base_url) + "</small>" : ""),
+          statusPill(p) + (p.updated_at ? '<br><small class="muted">Updated ' + esc(FQ.date(p.updated_at, true)) + "</small>" : ""),
+          esc(p.default_model || "—"),
+          '<button class="btn small" data-key="' + p.provider + '">' + (p.key_saved ? "Replace / edit" : "Add key") + "</button> " +
+          (p.key_saved || p.env_configured ? '<button class="btn small ghost" data-test="' + p.provider + '">Test</button> ' : "") +
+          (p.key_saved ? '<button class="link" data-del="' + p.provider + '">Delete</button>' : "")];
+      })) + "</div>";
+
+    $("#defaults").onsubmit = function (e) {
+      e.preventDefault();
+      var d = FQ.formData(this);
+      if (d.default_provider && d.default_provider === d.fallback_provider) return FQ.toast("Pick a different fallback provider.", "error");
+      keys({ action: "set_defaults", default_provider: d.default_provider || null, fallback_provider: d.fallback_provider || null })
+        .then(function (r) { FQ.toast("Saved"); drawAi(r); }).catch(function (e2) { FQ.toast(e2.message, "error"); });
+    };
+    $$("[data-key]").forEach(function (b) {
+      b.onclick = function () { editKey(provs.filter(function (p) { return p.provider === b.dataset.key; })[0]); };
+    });
+    $$("[data-test]").forEach(function (b) {
+      b.onclick = function () {
+        b.disabled = true; b.textContent = "Testing…";
+        keys({ action: "test", provider: b.dataset.test }).then(function (r) {
+          FQ.toast(r.message, r.ok ? "ok" : "error");
+        }).catch(function (e) { FQ.toast(e.message, "error"); }).then(function () { b.disabled = false; b.textContent = "Test"; });
+      };
+    });
+    $$("[data-del]").forEach(function (b) {
+      b.onclick = function () {
+        if (!FQ.confirm("Delete the saved key for this provider? The server secret (if any) will be used instead.")) return;
+        keys({ action: "delete", provider: b.dataset.del }).then(function (r) { FQ.toast("Key deleted"); drawAi(r); })
+          .catch(function (e) { FQ.toast(e.message, "error"); });
+      };
+    });
+  }
+
+  function editKey(p) {
+    var needsUrl = p.provider === "openai_compatible";
+    FQ.modal((p.key_saved ? "Edit " : "Add ") + p.label,
+      '<div class="form-grid">' +
+      '<label class="full">API key<input name="api_key" type="password" autocomplete="off" spellcheck="false" placeholder="' +
+        (p.key_saved ? "Leave empty to keep the saved key (" + esc(p.key_hint || "") + ")" : "Paste the key") + '"></label>' +
+      '<label class="full">Default model<input name="default_model" maxlength="100" value="' + esc(p.default_model || "") + '" placeholder="' + esc(MODEL_HINTS[p.provider]) + '"></label>' +
+      (needsUrl || p.base_url ? '<label class="full">Base URL' + (needsUrl ? "" : " (optional)") + '<input name="base_url" type="url" value="' + esc(p.base_url || "") + '" placeholder="https://openrouter.ai/api/v1"></label>' : "") +
+      '</div><p class="muted">The key is sent once over HTTPS, encrypted on the server, and never shown again.</p>',
+      function (form) {
+        var d = FQ.formData(form);
+        if (!p.key_saved && !d.api_key) throw new Error("Paste the API key.");
+        return keys({ action: "save", provider: p.provider, api_key: d.api_key || undefined, default_model: d.default_model, base_url: d.base_url })
+          .then(function (r) { FQ.toast("Saved"); drawAi(r); });
+      }, "Save");
   }
 
   boot();

@@ -14,7 +14,7 @@ Guest's browser                     Supabase (server)                         AI
 ───────────────                     ─────────────────                         ───────────
 widget.js  ── /widget  ──────────▶  Edge Function: public config + history
            ── /chat    ──────────▶  Edge Function: checks, rate limits,  ──▶  Claude / OpenAI /
-           ── /enquiry ──────────▶  loads ONE business's knowledge,           any compatible API
+           ── /enquiry ──────────▶  loads ONE business's knowledge,           Gemini / any compatible API
                                     saves messages & reservations
                                           │
 Owner's browser                           ▼
@@ -23,7 +23,7 @@ admin/                                  (each business sees only its own rows)
 ```
 
 - The widget never talks to the database directly and never sees a secret.
-- AI keys live only in Supabase function secrets.
+- AI keys are added in the admin panel and stored **encrypted** (AES-256-GCM) in the database. Only the server can decrypt them, with one master secret (`FAIDAHQ_ENCRYPTION_KEY`). No browser can read them back.
 - Row Level Security keeps every business's data separate.
 
 ## What's where
@@ -34,7 +34,7 @@ admin/                                  (each business sees only its own rows)
 | `demo/` | A realistic demo resort website ("Tamu Bay") using the widget |
 | `hospitality/` | Product page for the assistant |
 | `dashboard/` | Business dashboard: overview, profile, knowledge base, conversations, reservations, customers, AI settings, analytics, team |
-| `admin/` | FaidaHQ super-admin: businesses, plans, limits, suspend/activate, usage |
+| `admin/` | FaidaHQ super-admin: businesses, plans, limits, suspend/activate, usage, AI providers and keys |
 | `js/faidahq-config.js` | Public front-end settings (Supabase URL + anon key). No secrets. |
 | `supabase/migrations/` | Database tables, indexes, security rules and helper functions |
 | `supabase/functions/` | Edge Functions `widget`, `chat`, `enquiry` and shared code |

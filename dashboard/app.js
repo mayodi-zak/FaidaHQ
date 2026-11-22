@@ -474,7 +474,7 @@
     return FQ.q(FQ.db.from("ai_settings").select("*").eq("business_id", bid()).maybeSingle(), "Load AI settings").then(function (s) {
       s = s || { provider: "default", model: "", temperature: 0.3, max_output_tokens: 600, tone: "warm and professional", extra_instructions: "" };
       box.innerHTML = '<form id="aif" class="card form-grid"><p class="full muted">The assistant always follows FaidaHQ\'s safety rules: it only uses your knowledge base, never invents prices or availability, and never confirms bookings. API keys are kept on the server by FaidaHQ and are never shown here.</p>' +
-        sel("AI provider", "provider", s.provider, { "default": "FaidaHQ default (recommended)", anthropic: "Anthropic Claude", openai: "OpenAI", openai_compatible: "OpenAI-compatible service" }) +
+        sel("AI provider", "provider", s.provider, { "default": "FaidaHQ default (recommended)", anthropic: "Anthropic Claude", openai: "OpenAI", gemini: "Google Gemini", openai_compatible: "OpenAI-compatible service" }) +
         inp("Model (leave empty for the default)", "model", s.model, 'maxlength="100" placeholder="e.g. claude-haiku-5-5"') +
         inp("Creativity (0 = precise, 1 = creative; not used by Claude)", "temperature", s.temperature, 'type="number" min="0" max="1" step="0.05"') +
         inp("Maximum reply length (tokens)", "max_output_tokens", s.max_output_tokens, 'type="number" min="50" max="2000"') +

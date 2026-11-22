@@ -4,10 +4,12 @@
 // Supported providers:
 //   anthropic          — Claude Messages API
 //   openai             — OpenAI Chat Completions API
+//   gemini             — Google Gemini (through its OpenAI-compatible endpoint)
 //   openai_compatible  — any service with an OpenAI-style /chat/completions
 //                        endpoint (OpenRouter, Groq, Together, a local server…)
 
-export type ProviderName = "anthropic" | "openai" | "openai_compatible";
+export type ProviderName = "anthropic" | "openai" | "gemini" | "openai_compatible";
+export const PROVIDERS: ProviderName[] = ["anthropic", "openai", "gemini", "openai_compatible"];
 
 export interface ChatTurn {
   role: "user" | "assistant";
@@ -60,41 +62,86 @@ const DEFAULT_MODELS: Partial<Record<ProviderName, string>> = {
   anthropic: "claude-opus-5-5",
 };
 
+export const ENV_KEYS: Record<ProviderName, string> = {
+  anthropic: "ANTHROPIC_API_KEY",
+  openai: "OPENAI_API_KEY",
+  gemini: "GEMINI_API_KEY",
+  openai_compatible: "OPENAI_COMPATIBLE_API_KEY",
+};
+
+const DEFAULT_BASE_URLS: Partial<Record<ProviderName, string>> = {
+  anthropic: "https://api.anthropic.com",
+  openai: "https://api.openai.com/v1",
+  gemini: "https://generativelanguage.googleapis.com/v1beta/openai",
+};
+
+/** A key saved (encrypted) from the admin panel, already decrypted on the server. */
+export interface StoredCredential {
+  apiKey: string;
+  defaultModel?: string | null;
+  baseUrl?: string | null;
+}
+
+/** Platform-wide AI choices saved from the admin panel. */
+export interface PlatformAi {
+  defaultProvider?: string | null;
+  fallbackProvider?: string | null;
+  credentials: Partial<Record<ProviderName, StoredCredential>>;
+}
+
+const EMPTY_PLATFORM: PlatformAi = { credentials: {} };
+
+function asProvider(p: string | null | undefined): ProviderName {
+  const provider = (p || "").trim() as ProviderName;
+  if (!PROVIDERS.includes(provider)) throw new AiConfigError(`Unknown AI provider "${p}"`);
+  return provider;
+}
+
+function buildConfig(provider: ProviderName, modelOverride: string | null | undefined, env: Env, platform: PlatformAi): ProviderConfig {
+  const stored = platform.credentials[provider];
+  const envModel = env("AI_PROVIDER") === provider ? env("AI_MODEL") : undefined;
+  const model = (modelOverride || stored?.defaultModel || envModel || DEFAULT_MODELS[provider] || "").trim();
+  if (!model) throw new AiConfigError(`Choose a model for provider "${provider}" in the admin panel (or set AI_MODEL)`);
+
+  // Key saved in the admin panel wins; the function secret is the fallback.
+  const apiKey = stored?.apiKey || env(ENV_KEYS[provider]) || "";
+  if (!apiKey) throw new AiConfigError(`No API key for "${provider}". Add one in the admin panel (or set ${ENV_KEYS[provider]})`);
+
+  const envBase = provider === "anthropic" ? env("ANTHROPIC_BASE_URL")
+    : provider === "openai" ? env("OPENAI_BASE_URL")
+    : provider === "openai_compatible" ? env("OPENAI_COMPATIBLE_BASE_URL")
+    : undefined;
+  const baseUrl = stored?.baseUrl || envBase || DEFAULT_BASE_URLS[provider] || "";
+  if (!baseUrl) throw new AiConfigError(`Set a base URL for "${provider}" in the admin panel (or OPENAI_COMPATIBLE_BASE_URL)`);
+
+  const timeoutMs = Number(env("AI_TIMEOUT_MS") || 30000);
+  return { provider, model, apiKey, baseUrl: baseUrl.replace(/\/+$/, ""), timeoutMs };
+}
+
 /**
- * Work out which provider/model/key to use.
- * Business setting wins over the platform default (AI_PROVIDER / AI_MODEL).
+ * Work out which provider/model/key to use. Order of preference:
+ *   provider: business setting → admin-panel default → AI_PROVIDER secret → anthropic
+ *   model:    business setting → admin-panel default model → AI_MODEL → built-in default
+ *   key:      admin-panel (encrypted in DB) → function secret
  */
 export function resolveProviderConfig(
   business: { provider?: string | null; model?: string | null },
   env: Env,
+  platform: PlatformAi = EMPTY_PLATFORM,
 ): ProviderConfig {
-  const requested = business.provider && business.provider !== "default" ? business.provider : env("AI_PROVIDER");
-  const provider = (requested || "anthropic").trim() as ProviderName;
-  if (!["anthropic", "openai", "openai_compatible"].includes(provider)) {
-    throw new AiConfigError(`Unknown AI provider "${provider}"`);
+  const fromBusiness = business.provider && business.provider !== "default" ? business.provider : null;
+  const provider = asProvider(fromBusiness || platform.defaultProvider || env("AI_PROVIDER") || "anthropic");
+  return buildConfig(provider, business.model, env, platform);
+}
+
+/** The platform's fallback provider, if one is set, usable, and different from `primary`. */
+export function resolveFallbackConfig(primary: ProviderName | null, env: Env, platform: PlatformAi = EMPTY_PLATFORM): ProviderConfig | null {
+  if (!platform.fallbackProvider || platform.fallbackProvider === primary) return null;
+  try {
+    return buildConfig(asProvider(platform.fallbackProvider), null, env, platform);
+  } catch {
+    return null; // a misconfigured fallback must never break the main path
   }
-
-  const platformModel = env("AI_PROVIDER") === provider ? env("AI_MODEL") : undefined;
-  const model = (business.model || platformModel || DEFAULT_MODELS[provider] || "").trim();
-  if (!model) throw new AiConfigError(`Set AI_MODEL (or a model in the business AI settings) for provider "${provider}"`);
-
-  const keyName = provider === "anthropic"
-    ? "ANTHROPIC_API_KEY"
-    : provider === "openai"
-    ? "OPENAI_API_KEY"
-    : "OPENAI_COMPATIBLE_API_KEY";
-  const apiKey = env(keyName) || "";
-  if (!apiKey) throw new AiConfigError(`Missing secret ${keyName}`);
-
-  const baseUrl = provider === "anthropic"
-    ? (env("ANTHROPIC_BASE_URL") || "https://api.anthropic.com")
-    : provider === "openai"
-    ? (env("OPENAI_BASE_URL") || "https://api.openai.com/v1")
-    : (env("OPENAI_COMPATIBLE_BASE_URL") || "");
-  if (!baseUrl) throw new AiConfigError("Missing OPENAI_COMPATIBLE_BASE_URL");
-
-  const timeoutMs = Number(env("AI_TIMEOUT_MS") || 30000);
-  return { provider, model, apiKey, baseUrl: baseUrl.replace(/\/+$/, ""), timeoutMs };
 }
 
 async function postJson(
