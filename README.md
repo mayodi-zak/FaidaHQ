@@ -38,7 +38,7 @@ admin/                                  (each business sees only its own rows)
 | `js/faidahq-config.js` | Public front-end settings (Supabase URL + anon key). No secrets. |
 | `supabase/migrations/` | Database tables, indexes, security rules and helper functions |
 | `supabase/functions/` | Edge Functions `widget`, `chat`, `enquiry` and shared code |
-| `supabase/seed.sql` | Demo business data (generated from `demo/demo-business.json`) |
+| `supabase/migrations/20261122135608_seed.sql` | Demo business data (generated from `demo/demo-business.json`) |
 | `tests/` | Database, Edge Function and browser tests |
 | `docs/SETUP.md` | **Step-by-step setup, deployment, env vars, widget install, testing** |
 
