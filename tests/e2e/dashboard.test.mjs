@@ -43,6 +43,24 @@ const RPC = {
   admin_business_overview: [{ id: BIZ.id, name: BIZ.name, slug: BIZ.slug, type: BIZ.type, status: "active", plan_code: "starter", subscription_status: "trial", setup_fee_paid: false, monthly_message_limit: null, effective_limit: 1000, owner_email: USER.email, conversations_30d: 4, ai_replies_month: 850, tokens_month: 90000, pending_reservations: 1, created_at: now }],
 };
 
+// Stand-in for the admin-ai-keys Edge Function: like the real one, it never
+// returns a saved key, only a "…abcd" hint.
+const AI_LABELS = { anthropic: "Anthropic (Claude)", openai: "OpenAI", gemini: "Google Gemini", openai_compatible: "OpenAI-compatible" };
+function fakeAiKeys(st, body) {
+  if (body.action === "save" && body.api_key) st.saved[body.provider] = { key_hint: "…" + body.api_key.slice(-4), default_model: body.default_model || null };
+  if (body.action === "delete") delete st.saved[body.provider];
+  if (body.action === "set_defaults") { st.default_provider = body.default_provider; st.fallback_provider = body.fallback_provider; }
+  if (body.action === "test") return { ok: true, message: "Working. " + AI_LABELS[body.provider] + " answered." };
+  return {
+    encryption_ready: true, default_provider: st.default_provider, fallback_provider: st.fallback_provider, env_default_provider: "anthropic",
+    providers: Object.keys(AI_LABELS).map((p) => ({
+      provider: p, label: AI_LABELS[p], key_saved: !!st.saved[p], key_hint: st.saved[p]?.key_hint ?? null,
+      default_model: st.saved[p]?.default_model ?? null, base_url: null, updated_at: st.saved[p] ? now : null,
+      env_key_name: p.toUpperCase() + "_API_KEY", env_configured: p === "anthropic",
+    })),
+  };
+}
+
 let browser, srv;
 before(async () => { srv = await startServer(); browser = await chromium.launch(); });
 after(async () => { await browser?.close(); srv?.server.close(); });
@@ -53,6 +71,7 @@ async function openDashboard(path, { admin = false, signedIn = true, ctxOpts = {
   const data = fixtures();
   if (admin) data.platform_admins = [{ user_id: USER.id }];
   const writes = [];
+  const aiState = { saved: {}, default_provider: null, fallback_provider: null };
   page.errors = [];
   page.on("pageerror", (e) => page.errors.push(String(e)));
 
@@ -92,6 +111,11 @@ async function openDashboard(path, { admin = false, signedIn = true, ctxOpts = {
       const row = { id: "new-" + writes.length, created_at: now, ...out };
       const single = (req.headers()["accept"] || "").includes("vnd.pgrst.object");
       return json(single ? row : [row], req.method() === "POST" ? 201 : 200);
+    }
+    if (url.pathname === "/functions/v1/admin-ai-keys") {
+      const body = JSON.parse(req.postData() || "{}");
+      writes.push({ fn: "admin-ai-keys", body });
+      return json(fakeAiKeys(aiState, body));
     }
     return json({}, 404);
   });
@@ -214,4 +238,32 @@ test("admin: non-admins are refused; admins see platform overview", async () => 
   assert.equal(w.body.status, "suspended");
   await p2.screenshot({ path: "test-results/admin.png", fullPage: true });
   assert.deepEqual(p2.errors, []);
+});
+
+test("admin: AI providers page saves keys without ever showing them again", async () => {
+  const { page, writes } = await openDashboard("/admin/#ai", { admin: true });
+  await page.getByRole("heading", { name: "API keys" }).waitFor();
+  assert.match(await page.locator("tr", { hasText: "Anthropic" }).innerText(), /Using server secret/);
+
+  await page.locator("tr", { hasText: "Google Gemini" }).getByRole("button", { name: "Add key" }).click();
+  const keyInput = page.locator('.modal input[name="api_key"]');
+  assert.equal(await keyInput.getAttribute("type"), "password");
+  await keyInput.fill("fake-gemini-test-only-key-9876");
+  await page.locator('.modal input[name="default_model"]').fill("gemini-2.5-flash");
+  await page.locator(".modal").getByRole("button", { name: "Save" }).click();
+  await page.locator("tr", { hasText: "Google Gemini" }).getByText("Key saved …9876").waitFor();
+  assert.ok(!(await page.content()).includes("fake-gemini-test-only-key-9876"), "saved key must not appear on the page");
+  assert.equal(writes.find((w) => w.fn && w.body.action === "save").body.provider, "gemini");
+
+  await page.locator('#defaults select[name="default_provider"]').selectOption("openai");
+  await page.locator('#defaults select[name="fallback_provider"]').selectOption("gemini");
+  await page.getByRole("button", { name: "Save choice" }).click();
+  await page.waitForFunction(() => document.querySelector(".toast"));
+  const d = writes.find((w) => w.fn && w.body.action === "set_defaults").body;
+  assert.deepEqual([d.default_provider, d.fallback_provider], ["openai", "gemini"]);
+
+  await page.locator("tr", { hasText: "Google Gemini" }).getByRole("button", { name: "Test" }).click();
+  await page.locator(".toast", { hasText: "Working" }).waitFor();
+  await page.screenshot({ path: "test-results/admin-ai.png", fullPage: true });
+  assert.deepEqual(page.errors, []);
 });

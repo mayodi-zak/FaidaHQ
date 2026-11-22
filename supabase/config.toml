@@ -24,3 +24,8 @@ verify_jwt = false
 
 [functions.enquiry]
 verify_jwt = false
+
+# Admin-only: needs a signed-in user, and the function itself checks that the
+# user is a FaidaHQ platform admin before touching any AI key.
+[functions.admin-ai-keys]
+verify_jwt = true

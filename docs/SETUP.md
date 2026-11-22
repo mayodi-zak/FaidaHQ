@@ -5,7 +5,7 @@ Follow these steps in order. It takes about 30 minutes.
 You need:
 
 - A free [Supabase](https://supabase.com) account.
-- An AI provider key: [Anthropic](https://console.anthropic.com) (default), [OpenAI](https://platform.openai.com), or any OpenAI-compatible service.
+- An AI provider key: [OpenAI](https://platform.openai.com), [Google Gemini](https://aistudio.google.com/apikey), [Anthropic](https://console.anthropic.com), or any OpenAI-compatible service. You add it in the admin panel later.
 - The [Supabase CLI](https://supabase.com/docs/guides/cli) on your computer.
 
 ---
@@ -55,28 +55,30 @@ What `db push` creates:
 
 Every table has Row Level Security switched on.
 
-## 3. Set the secrets (environment variables)
+## 3. Set the master encryption key (one secret)
 
-Copy the example file and fill it in:
+AI keys are added in the admin panel (step 6) and stored encrypted in the database. They are encrypted with **one master key** that lives only in Supabase secrets.
 
 ```bash
-cp supabase/functions/.env.example supabase/functions/.env
-# edit supabase/functions/.env
-supabase secrets set --env-file supabase/functions/.env
+supabase secrets set FAIDAHQ_ENCRYPTION_KEY="$(openssl rand -base64 32)"
 ```
 
-| Variable | Required | What it does |
-| --- | --- | --- |
-| `AI_PROVIDER` | yes | `anthropic`, `openai` or `openai_compatible` |
-| `AI_MODEL` | for OpenAI / compatible | Model name. For Anthropic it defaults to `claude-opus-5-5`; set e.g. `claude-haiku-5-5` for lower cost |
-| `ANTHROPIC_API_KEY` | if using Anthropic | Your Anthropic key |
-| `OPENAI_API_KEY` | if using OpenAI | Your OpenAI key |
-| `OPENAI_COMPATIBLE_API_KEY` | if using a compatible service | Key for that service |
-| `OPENAI_COMPATIBLE_BASE_URL` | if using a compatible service | e.g. `https://openrouter.ai/api/v1` |
-| `AI_TIMEOUT_MS` | no | AI timeout, default `30000` |
-| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | automatic | Supabase provides these to functions |
+- It is 32 random bytes, written as base64. The command above creates it.
+- Keep a private copy (for example in a password manager). If it is lost or changed, the saved AI keys can no longer be decrypted and must be entered again.
+- Never put it in a file in this repository or in the browser.
 
-A business can choose a different provider/model in **Dashboard → AI configuration**, but the API keys always stay with FaidaHQ on the server.
+### Optional: keys as secrets instead
+
+You can still set AI keys as Supabase secrets. A key saved in the admin panel wins; a secret is used when no key is saved for that provider. See `supabase/functions/.env.example`:
+
+| Variable | What it does |
+| --- | --- |
+| `AI_PROVIDER` | Default provider when none is chosen in the admin panel: `anthropic`, `openai`, `gemini` or `openai_compatible` |
+| `AI_MODEL` | Model for `AI_PROVIDER` (Anthropic defaults to `claude-opus-5-5`) |
+| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `OPENAI_COMPATIBLE_API_KEY` | Provider keys |
+| `OPENAI_COMPATIBLE_BASE_URL` | e.g. `https://openrouter.ai/api/v1` |
+| `AI_TIMEOUT_MS` | AI timeout, default `30000` |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Provided automatically by Supabase |
 
 ## 4. Deploy the Edge Functions
 
@@ -84,9 +86,10 @@ A business can choose a different provider/model in **Dashboard → AI configura
 supabase functions deploy widget
 supabase functions deploy chat
 supabase functions deploy enquiry
+supabase functions deploy admin-ai-keys
 ```
 
-`supabase/config.toml` marks these three as public (`verify_jwt = false`) because website visitors are not signed in. They protect themselves: input validation, business status checks, allowed-website checks, per-visitor and per-IP rate limits, and monthly plan limits.
+`supabase/config.toml` marks the first three as public (`verify_jwt = false`) because website visitors are not signed in. They protect themselves: input validation, business status checks, allowed-website checks, per-visitor and per-IP rate limits, and monthly plan limits. `admin-ai-keys` needs a signed-in user and checks on the server that the user is a platform admin.
 
 Quick check (replace the URL):
 
@@ -134,6 +137,22 @@ select '6f1d2c3b-4a5e-4f60-8a7b-9c0d1e2f3a4b', id, 'owner' from auth.users where
 ```
 
 `/admin/` now shows all businesses.
+
+### Add your AI keys
+
+1. Open `/admin/` → **AI providers**.
+2. Click **Add key** next to OpenAI and/or Google Gemini (or Anthropic), paste the key, and type the model (for example `gpt-5-mini` or `gemini-2.5-flash`). Click **Save**.
+3. Click **Test** to check the key works.
+4. Under **Which AI answers guests**, pick the **main provider** and, if you like, a **fallback provider** that is used automatically when the main one fails. Click **Save choice**.
+
+How the keys are protected:
+
+- The key is sent once over HTTPS to the `admin-ai-keys` function, which checks you are a platform admin, encrypts it (AES-256-GCM) and stores only the encrypted text.
+- The database tables for keys cannot be read by any browser, not even an admin. The page only ever shows the last 4 characters.
+- The chat function decrypts keys on the server when it needs them. Changes take effect within a minute.
+- To change a key, click **Replace / edit**. To remove it, click **Delete**.
+
+A business can still pick its own provider and model in **Dashboard → AI configuration**.
 
 ## 7. Onboard a new hotel or restaurant
 
@@ -200,7 +219,7 @@ npm install                # installs the Supabase JS file used by dashboard tes
 deno test --allow-env tests/functions
 ```
 
-Covers chat, conversation ownership, business isolation in the AI prompt, escalation, reservation validation, rate limits, plan limits, provider adapters and error handling.
+Covers chat, conversation ownership, business isolation in the AI prompt, escalation, reservation validation, rate limits, plan limits, provider adapters, error handling, key encryption, fallback provider and the admin-only key function.
 
 **Database security** (needs a PostgreSQL 15+ server you can create databases on):
 

@@ -164,6 +164,35 @@ select tests.expect((select count(*) from public.admin_business_overview()), 3, 
 select tests.expect((select count(*) from public.admin_business_overview() where owner_email = 'owner-a@example.com'), 1, 'overview shows owner email');
 reset role;
 
+-- 10. Encrypted AI keys: no browser role can read or change them -----------------
+insert into public.ai_provider_credentials (provider, encrypted_key, key_hint, default_model)
+  values ('openai', 'v1:dGVzdA==:dGVzdA==', '…wxyz', 'gpt-5-mini');
+select tests.expect_denied($$insert into public.ai_provider_credentials (provider, encrypted_key, key_hint) values ('gemini', 'plain-key', '…')$$, 'unencrypted key format rejected');
+select tests.expect_denied($$insert into public.ai_provider_credentials (provider, encrypted_key, key_hint, base_url) values ('gemini', 'v1:a:b', '…', 'http://insecure.example')$$, 'non-https base url rejected');
+select tests.expect_denied($$update public.platform_ai_settings set default_provider = 'openai', fallback_provider = 'openai'$$, 'fallback must differ from default');
+select set_config('request.jwt.claim.sub', '44444444-4444-4444-8444-444444444444', false);
+set role authenticated;
+select tests.expect_denied('select * from public.ai_provider_credentials', 'platform admin cannot read key table directly');
+select tests.expect_denied('select * from public.platform_ai_settings', 'platform admin cannot read AI settings table directly');
+select tests.expect_denied($$update public.ai_provider_credentials set default_model = 'x'$$, 'admin cannot change keys directly');
+select tests.expect_denied($$insert into public.ai_provider_credentials (provider, encrypted_key, key_hint) values ('gemini', 'v1:a:b', '…')$$, 'admin cannot insert keys directly');
+select tests.expect((select count(*) from public.admin_ai_overview()), 4, 'admin overview lists all four providers');
+select tests.expect((select count(*) from public.admin_ai_overview() where provider = 'openai' and key_hint = '…wxyz'), 1, 'admin overview shows only the key hint');
+select tests.expect((select count(*) from information_schema.routines r join information_schema.parameters p on p.specific_name = r.specific_name
+  where r.routine_name = 'admin_ai_overview' and p.parameter_name in ('encrypted_key', 'api_key')), 0, 'admin overview has no key column');
+select set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', false);
+select tests.expect_denied('select * from public.admin_ai_overview()', 'non-admin cannot read AI overview');
+select tests.expect_denied('select * from public.ai_provider_credentials', 'owner cannot read key table');
+select tests.expect((select count(*) from public.ai_settings where business_id = :'a_id'), 1, 'owner sees own AI settings');
+update public.ai_settings set provider = 'gemini', model = 'gemini-2.5-flash' where business_id = :'a_id';
+select tests.expect((select count(*) from public.ai_settings where business_id = :'a_id' and provider = 'gemini'), 1, 'owner can choose Gemini');
+reset role;
+set role anon;
+select tests.expect_denied('select * from public.ai_provider_credentials', 'anon cannot read key table');
+select tests.expect_denied('select * from public.admin_ai_overview()', 'anon cannot call AI overview');
+reset role;
+select set_config('request.jwt.claim.sub', '', false);
+
 -- 9. Demo seed loaded --------------------------------------------------------------
 select tests.expect((select count(*) from public.knowledge_items where business_id = '6f1d2c3b-4a5e-4f60-8a7b-9c0d1e2f3a4b'), 37, 'demo knowledge seeded');
 
