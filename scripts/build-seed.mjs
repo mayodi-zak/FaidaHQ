@@ -1,4 +1,4 @@
-// Generates supabase/seed.sql from demo/demo-business.json, so the demo
+// Generates supabase/migrations/20261122135608_seed.sql from demo/demo-business.json, so the demo
 // website (offline mode) and the database demo share one source of truth.
 // Usage: node scripts/build-seed.mjs
 import { readFileSync, writeFileSync } from "node:fs";
@@ -32,5 +32,5 @@ const lines = [
   ).join(",\n") + ";",
   "",
 ];
-writeFileSync(join(root, "supabase/seed.sql"), lines.join("\n"));
-console.log(`Wrote supabase/seed.sql (${b.knowledge.length} knowledge items)`);
+writeFileSync(join(root, "supabase/migrations/20261122135608_seed.sql"), lines.join("\n"));
+console.log(`Wrote supabase/migrations/20261122135608_seed.sql (${b.knowledge.length} knowledge items)`);

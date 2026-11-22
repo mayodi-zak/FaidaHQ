@@ -30,12 +30,7 @@ supabase link --project-ref abcd1234
 supabase db push                      # creates all tables, security rules and functions
 ```
 
-Then load the demo business (optional, but needed for the live demo):
-
-```bash
-psql "$(supabase db url)" -f supabase/seed.sql
-# or paste the contents of supabase/seed.sql into Supabase → SQL Editor → Run
-```
+This also loads the demo business (Tamu Bay), because its data is a migration: `supabase/migrations/20261122135608_seed.sql`.
 
 What `db push` creates:
 
