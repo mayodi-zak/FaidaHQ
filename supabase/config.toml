@@ -1,0 +1,26 @@
+# Supabase CLI configuration for the FaidaHQ Hospitality Assistant.
+# Run `supabase link --project-ref <your-ref>` to connect this folder to your project.
+project_id = "faidahq"
+
+[api]
+port = 54321
+schemas = ["public"]
+
+[db]
+port = 54322
+major_version = 15
+
+[auth]
+site_url = "https://faidahq.com"
+additional_redirect_urls = ["https://faidahq.com/dashboard/", "http://localhost:8080/dashboard/"]
+
+# The widget endpoints are public (website visitors are not signed in).
+# They do their own validation, business scoping and rate limiting.
+[functions.widget]
+verify_jwt = false
+
+[functions.chat]
+verify_jwt = false
+
+[functions.enquiry]
+verify_jwt = false

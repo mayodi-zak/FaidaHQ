@@ -1,0 +1,73 @@
+{
+  "id": "6f1d2c3b-4a5e-4f60-8a7b-9c0d1e2f3a4b",
+  "slug": "tamu-bay-resort",
+  "name": "Tamu Bay Resort & Kitchen",
+  "type": "hotel_restaurant",
+  "description": "A 42-room beachfront boutique resort on Diani Beach with an open-air Swahili-fusion restaurant, infinity pool and spa. Fictional demo business used to showcase the FaidaHQ Hospitality Assistant.",
+  "email": "stay@tamubay.example",
+  "phone": "+254 700 000 123",
+  "whatsapp": "+254 700 000 123",
+  "website": "https://faidahq.com/demo/",
+  "address": "Diani Beach Road, Ukunda",
+  "city": "Diani",
+  "country": "Kenya",
+  "timezone": "Africa/Nairobi",
+  "currency": "KES",
+  "branding": {
+    "assistant_name": "Amani",
+    "primary_color": "#0f766e",
+    "accent_color": "#f59e0b",
+    "welcome_message": "Jambo! I'm Amani, Tamu Bay's virtual concierge. Ask me about rooms, our menu, the spa or making a reservation.",
+    "suggestions": ["What rooms do you have?", "Is breakfast included?", "Book a table for dinner", "What time is check-in?"]
+  },
+  "ai_settings": {
+    "tone": "warm, welcoming and concise, like a Kenyan coastal concierge",
+    "extra_instructions": "Use a light Swahili greeting (Jambo, Karibu, Asante) where natural. Prices are in Kenyan Shillings (KES)."
+  },
+  "knowledge": [
+    { "category": "hours", "title": "Reception", "content": "Open 24 hours, every day." },
+    { "category": "hours", "title": "Check-in and check-out", "content": "Check-in from 2:00 pm. Check-out by 11:00 am. Late check-out until 3:00 pm can be requested and depends on availability (KES 4,000)." },
+    { "category": "hours", "title": "Pwani Restaurant", "content": "Breakfast 6:30 am to 10:30 am. Lunch 12:30 pm to 3:30 pm. Dinner 7:00 pm to 10:30 pm. Open every day, including public holidays." },
+    { "category": "hours", "title": "Mvua Spa", "content": "9:00 am to 8:00 pm daily. Last treatment starts at 7:00 pm." },
+    { "category": "hours", "title": "Pool and beach bar", "content": "Infinity pool 7:00 am to 8:00 pm. Beach bar 10:00 am to 11:00 pm." },
+
+    { "category": "room", "title": "Garden Room", "content": "28 m², queen bed, garden view, air conditioning, rain shower, free Wi-Fi. Sleeps up to 2 adults.", "price": 14500, "price_unit": "per night, bed & breakfast for 2" },
+    { "category": "room", "title": "Ocean View Room", "content": "34 m², king or twin beds, private balcony facing the Indian Ocean, air conditioning, minibar. Sleeps up to 2 adults and 1 child under 12.", "price": 21000, "price_unit": "per night, bed & breakfast for 2" },
+    { "category": "room", "title": "Family Suite", "content": "62 m², two bedrooms (king + twin), living area, garden terrace, two bathrooms. Sleeps up to 4 adults or 2 adults and 3 children.", "price": 34000, "price_unit": "per night, bed & breakfast for 4" },
+    { "category": "room", "title": "Beachfront Villa", "content": "110 m², private plunge pool, direct beach access, outdoor shower, butler service. Sleeps up to 2 adults.", "price": 58000, "price_unit": "per night, half board for 2" },
+
+    { "category": "facility", "title": "Infinity pool", "content": "Heated infinity pool overlooking the ocean, with a separate shallow children's pool. Towels provided." },
+    { "category": "facility", "title": "Mvua Spa", "content": "Four treatment rooms, steam room and couples' suite. Signature 60-minute Swahili coconut massage." },
+    { "category": "facility", "title": "Wi-Fi and workspace", "content": "Free high-speed Wi-Fi throughout the resort and a quiet co-working lounge by the lobby." },
+    { "category": "facility", "title": "Parking", "content": "Free secure parking for guests, with 24-hour security." },
+    { "category": "facility", "title": "Kids' club", "content": "Supervised kids' club for ages 4 to 12, 9:00 am to 5:00 pm. Free for staying guests." },
+
+    { "category": "service", "title": "Airport transfer", "content": "Private transfer from Ukunda Airstrip (10 minutes) or Moi International Airport, Mombasa (about 1 hour 30 minutes).", "price": 6500, "price_unit": "one way from Mombasa, up to 4 people" },
+    { "category": "service", "title": "Swahili coconut massage", "content": "60-minute full-body massage with warm coconut oil.", "price": 7500, "price_unit": "per person" },
+    { "category": "service", "title": "Snorkelling trip to Kisite Marine Park", "content": "Full-day dhow trip with snorkelling gear, seafood lunch and park fees. Runs Tuesday, Thursday and Saturday.", "price": 12000, "price_unit": "per adult" },
+    { "category": "service", "title": "Laundry", "content": "Same-day laundry if handed in before 10:00 am. Priced per item; see the list in your room." },
+
+    { "category": "menu_item", "title": "Swahili breakfast", "content": "Mandazi, chai masala, tropical fruit, eggs any style. Included in all room rates.", "price": 1800, "price_unit": "per person for non-residents", "metadata": { "course": "breakfast" } },
+    { "category": "menu_item", "title": "Grilled catch of the day", "content": "Fresh reef fish with coconut rice, kachumbari and tamarind sauce.", "price": 2400, "price_unit": "per plate", "metadata": { "course": "main" } },
+    { "category": "menu_item", "title": "Prawn pilau", "content": "Spiced Lamu-style pilau with king prawns and raita.", "price": 2900, "price_unit": "per plate", "metadata": { "course": "main" } },
+    { "category": "menu_item", "title": "Coconut bean curry (vegan)", "content": "Red kidney beans in coconut curry with chapati or rice. Vegan and gluten-free on request.", "price": 1500, "price_unit": "per plate", "metadata": { "course": "main", "dietary": ["vegan"] } },
+    { "category": "menu_item", "title": "Nyama choma platter", "content": "Charcoal-grilled goat ribs with ugali, sukuma wiki and kachumbari. Serves 2.", "price": 3600, "price_unit": "per platter", "metadata": { "course": "main" } },
+    { "category": "menu_item", "title": "Mango and passion sorbet", "content": "House-made, dairy-free.", "price": 750, "price_unit": "per bowl", "metadata": { "course": "dessert" } },
+    { "category": "menu_item", "title": "Dawa cocktail", "content": "Vodka, lime, honey and crushed ice. Non-alcoholic version available.", "price": 900, "price_unit": "per glass", "metadata": { "course": "drinks" } },
+
+    { "category": "policy", "title": "Cancellation policy", "content": "Free cancellation up to 7 days before arrival. Cancellations within 7 days are charged one night. No-shows are charged the full stay." },
+    { "category": "policy", "title": "Deposit", "content": "A 30% deposit by M-Pesa or card is needed to secure a room booking once the reservation team confirms availability." },
+    { "category": "policy", "title": "Children", "content": "Children under 4 stay free in their parents' room. Children 4 to 11 sharing with parents pay KES 3,500 per night including breakfast." },
+    { "category": "policy", "title": "Pets", "content": "Pets are not allowed, except registered assistance animals." },
+    { "category": "policy", "title": "Restaurant reservations", "content": "Table bookings are recommended for dinner. Groups larger than 10 must be arranged with the restaurant manager. Tables are held for 15 minutes." },
+    { "category": "policy", "title": "Payment methods", "content": "M-Pesa, Visa, Mastercard and cash (KES, USD, EUR)." },
+
+    { "category": "offer", "title": "Stay 4, pay 3", "content": "Book 4 nights in any room type and the 4th night is free. Valid for stays from 1 February to 31 March 2027. Not combinable with other offers." },
+    { "category": "offer", "title": "Sunset seafood night", "content": "Every Friday from 7:00 pm: seafood buffet with live taarab music on the beach.", "price": 4500, "price_unit": "per person" },
+
+    { "category": "faq", "title": "Is breakfast included?", "content": "Yes. All room rates include breakfast at Pwani Restaurant. The Beachfront Villa includes breakfast and dinner." },
+    { "category": "faq", "title": "Do you accept walk-in diners?", "content": "Yes, non-residents are welcome at Pwani Restaurant. Booking ahead for dinner is recommended, especially on Fridays." },
+    { "category": "faq", "title": "How far is the resort from the airport?", "content": "10 minutes from Ukunda Airstrip and about 1 hour 30 minutes from Moi International Airport in Mombasa, depending on the Likoni ferry." },
+    { "category": "faq", "title": "Can you cater for dietary needs?", "content": "Yes. Vegetarian, vegan, halal and gluten-free meals are available. Please mention allergies when booking." }
+  ]
+}

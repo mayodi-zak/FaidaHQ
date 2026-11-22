@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+   <head>
+      <meta charset="utf-8" />
+      <title>Hospitality AI Assistant - FaidaHQ</title>
+      <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+      <meta content="hotel chatbot, restaurant chatbot, AI concierge, hospitality AI, Kenya, reservations" name="keywords" />
+      <meta content="FaidaHQ gives hotels, restaurants and cafés an AI assistant that answers guests 24/7, takes reservation requests and hands tricky questions to your team." name="description" />
+      <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+      <link rel="apple-touch-icon" href="/img/apple-touch-icon.png" />
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Saira:wght@500;600;700&display=swap" rel="stylesheet" />
+      <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet" />
+      <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet" />
+      <link href="/lib/animate/animate.min.css" rel="stylesheet" />
+      <link href="/css/bootstrap.min.css" rel="stylesheet" />
+      <link href="/css/style.css" rel="stylesheet" />
+      <style>
+         .hq-feature { background: var(--bs-light); border-radius: 16px; padding: 28px; height: 100%; }
+         .hq-feature i { font-size: 34px; color: var(--bs-primary); margin-bottom: 14px; }
+         .hq-feature h5 { margin-bottom: 8px; }
+         .hq-step { display: flex; gap: 16px; margin-bottom: 22px; }
+         .hq-step-num { flex: none; width: 42px; height: 42px; border-radius: 50%; background: var(--bs-secondary); color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+         .hq-code { background: #0f172a; color: #e2e8f0; border-radius: 12px; padding: 18px; font-size: 13px; overflow-x: auto; white-space: pre; }
+         .hq-plan { border: 1px solid #e2e8f0; border-radius: 18px; padding: 30px; height: 100%; background: #fff; }
+         .hq-plan.popular { border: 2px solid var(--bs-primary); box-shadow: 0 12px 30px rgba(79, 70, 229, .15); }
+         .hq-plan .price { font-size: 34px; font-weight: 700; color: var(--bs-dark); font-family: Saira, sans-serif; }
+         .hq-plan ul { padding-left: 18px; color: #475569; }
+         .hq-chat-preview { background: #fff; border-radius: 18px; box-shadow: 0 18px 50px rgba(15, 23, 42, .18); max-width: 360px; margin: 0 auto; overflow: hidden; }
+         .hq-chat-preview .head { background: #0f766e; color: #fff; padding: 14px 16px; font-weight: 600; }
+         .hq-chat-preview .body { padding: 16px; background: #f8fafc; font-size: 14px; }
+         .hq-bubble { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 10px 12px; margin-bottom: 10px; max-width: 88%; }
+         .hq-bubble.me { background: #0f766e; color: #fff; margin-left: auto; border-color: transparent; }
+      </style>
+   </head>
+   <body>
+      <div id="spinner" class="show position-fixed translate-middle w-100 vh-100 top-50 start-50 d-flex align-items-center justify-content-center">
+         <div class="spinner-grow text-primary" role="status"></div>
+      </div>
+
+      <faidahq-navbar active="hospitality"></faidahq-navbar>
+
+      <div class="container-fluid page-header py-5">
+         <div class="container text-center py-5">
+            <h1 class="display-3 text-white mb-4 animated slideInDown">Hospitality AI Assistant</h1>
+            <p class="text-white-50 fs-5 mb-4">A 24/7 virtual concierge for hotels, restaurants and cafés.</p>
+            <a href="/demo/" class="btn btn-secondary text-white px-5 py-3 rounded-pill me-2 mb-2">Try the live demo</a>
+            <a href="/contact/" class="btn btn-outline-light px-5 py-3 rounded-pill mb-2">Talk to us</a>
+         </div>
+      </div>
+
+      <!-- Intro -->
+      <div class="container-fluid py-5 my-5">
+         <div class="container">
+            <div class="row g-5 align-items-center">
+               <div class="col-lg-6 wow fadeIn" data-wow-delay=".2s">
+                  <h5 class="text-primary">Never miss a guest again</h5>
+                  <h1 class="mb-4">Your guests ask. Your assistant answers, instantly.</h1>
+                  <p>Guests message at midnight asking about rooms, prices, the menu or whether you have parking. FaidaHQ answers them on your website in seconds, using only the information <strong>you</strong> give it.</p>
+                  <p>When someone wants to book, it collects a proper reservation request for your team to confirm. When it isn't sure, it says so and passes the question to a person. It never invents prices or confirms bookings on its own.</p>
+                  <a href="/demo/" class="btn btn-primary px-5 py-3 rounded-pill mt-2">See it on a demo resort</a>
+               </div>
+               <div class="col-lg-6 wow fadeIn" data-wow-delay=".4s">
+                  <div class="hq-chat-preview" aria-hidden="true">
+                     <div class="head">Amani · Tamu Bay Resort</div>
+                     <div class="body">
+                        <div class="hq-bubble">Jambo! I'm Amani. Ask me about rooms, our menu or making a reservation.</div>
+                        <div class="hq-bubble me">Do you have a family room for 4 in December?</div>
+                        <div class="hq-bubble">Yes, our Family Suite sleeps 4 and is KES 34,000 per night with breakfast. I can't see live availability, but I can send a request to our reservations team. Shall I open the form?</div>
+                        <div class="hq-bubble me">Yes please</div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+
+      <!-- Features -->
+      <div class="container-fluid bg-light py-5">
+         <div class="container py-4">
+            <div class="text-center mx-auto pb-4 wow fadeIn" data-wow-delay=".2s" style="max-width: 640px;">
+               <h5 class="text-primary">What it does</h5>
+               <h1>Built for hospitality</h1>
+            </div>
+            <div class="row g-4">
+               <div class="col-md-6 col-lg-4"><div class="hq-feature bg-white"><i class="fas fa-concierge-bell"></i><h5>Answers guest questions</h5><p class="mb-0">Rooms, facilities, menu, prices, opening hours and policies, in the guest's own language.</p></div></div>
+               <div class="col-md-6 col-lg-4"><div class="hq-feature bg-white"><i class="fas fa-calendar-check"></i><h5>Reservation requests</h5><p class="mb-0">Collects check-in/out dates or table times, guests and contact details. Your team confirms with one click.</p></div></div>
+               <div class="col-md-6 col-lg-4"><div class="hq-feature bg-white"><i class="fas fa-user-friends"></i><h5>Hands off to your team</h5><p class="mb-0">Complaints, special requests and anything it can't answer are flagged for a person to follow up.</p></div></div>
+               <div class="col-md-6 col-lg-4"><div class="hq-feature bg-white"><i class="fas fa-book-open"></i><h5>You control the knowledge</h5><p class="mb-0">Update rooms, menus, prices and FAQs in your dashboard. No code, no waiting for a developer.</p></div></div>
+               <div class="col-md-6 col-lg-4"><div class="hq-feature bg-white"><i class="fas fa-shield-alt"></i><h5>Honest and safe</h5><p class="mb-0">It only uses your information, never invents prices or availability, and your data is kept separate from every other business.</p></div></div>
+               <div class="col-md-6 col-lg-4"><div class="hq-feature bg-white"><i class="fas fa-chart-line"></i><h5>Insights</h5><p class="mb-0">See conversations, popular questions, reservation requests and new customers in one place.</p></div></div>
+            </div>
+         </div>
+      </div>
+
+      <!-- How it works -->
+      <div class="container-fluid py-5 my-5">
+         <div class="container">
+            <div class="row g-5">
+               <div class="col-lg-6">
+                  <h5 class="text-primary">How it works</h5>
+                  <h1 class="mb-4">Live in a day</h1>
+                  <div class="hq-step"><div class="hq-step-num">1</div><div><h5>We set you up</h5><p class="mb-0">We load your rooms, menu, hours and policies, and match the chat to your brand colours.</p></div></div>
+                  <div class="hq-step"><div class="hq-step-num">2</div><div><h5>Add one line to your website</h5><p class="mb-0">Paste a single script tag. It works on WordPress, Wix, custom sites and more.</p></div></div>
+                  <div class="hq-step"><div class="hq-step-num">3</div><div><h5>Guests start chatting</h5><p class="mb-0">You see every conversation and reservation request in your FaidaHQ dashboard.</p></div></div>
+               </div>
+               <div class="col-lg-6">
+                  <h5 class="mb-3">The whole installation:</h5>
+                  <div class="hq-code">&lt;script src="https://faidahq.com/widget.js"
+        data-business-id="YOUR_BUSINESS_ID"
+        data-api-url="https://YOUR-PROJECT.supabase.co/functions/v1"
+        defer&gt;&lt;/script&gt;</div>
+                  <p class="mt-3 text-muted">Already a customer? <a href="/dashboard/">Sign in to your dashboard</a>.</p>
+               </div>
+            </div>
+         </div>
+      </div>
+
+      <!-- Pricing -->
+      <div class="container-fluid bg-light py-5">
+         <div class="container py-4">
+            <div class="text-center mx-auto pb-4" style="max-width: 640px;">
+               <h5 class="text-primary">Pricing</h5>
+               <h1>Simple plans</h1>
+               <p>A one-time setup fee, then a monthly subscription. Prices in Kenyan Shillings.</p>
+            </div>
+            <div class="row g-4">
+               <div class="col-lg-4"><div class="hq-plan"><h4>Starter</h4><div class="price">KES 5,000<small class="fs-6 text-muted">/month</small></div><p class="text-muted">Setup KES 15,000</p><ul><li>1,000 assistant replies a month</li><li>Website chat widget</li><li>Reservation requests</li><li>Dashboard</li></ul></div></div>
+               <div class="col-lg-4"><div class="hq-plan popular"><span class="badge bg-primary mb-2">Most popular</span><h4>Growth</h4><div class="price">KES 12,000<small class="fs-6 text-muted">/month</small></div><p class="text-muted">Setup KES 25,000</p><ul><li>5,000 assistant replies a month</li><li>Everything in Starter</li><li>Team accounts</li><li>Usage analytics</li></ul></div></div>
+               <div class="col-lg-4"><div class="hq-plan"><h4>Premium</h4><div class="price">KES 25,000<small class="fs-6 text-muted">/month</small></div><p class="text-muted">Setup KES 50,000</p><ul><li>20,000 assistant replies a month</li><li>Everything in Growth</li><li>Several properties</li><li>Priority support</li></ul></div></div>
+            </div>
+            <div class="text-center mt-4"><a href="/contact/" class="btn btn-secondary text-white px-5 py-3 rounded-pill">Get started</a></div>
+         </div>
+      </div>
+
+      <faidahq-footer></faidahq-footer>
+      <a href="#" class="btn btn-secondary btn-square rounded-circle back-to-top"><i class="fa fa-arrow-up text-white"></i></a>
+
+      <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+      <script src="/lib/wow/wow.min.js"></script>
+      <script src="/lib/easing/easing.min.js"></script>
+      <script src="/lib/waypoints/waypoints.min.js"></script>
+      <script src="/js/components.js"></script>
+      <script src="/js/main.js"></script>
+   </body>
+</html>

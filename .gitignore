@@ -1,0 +1,9 @@
+.DS_Store
+node_modules/
+deno.lock
+.env
+.env.*
+supabase/.temp/
+supabase/.branches/
+test-results/
+playwright-report/

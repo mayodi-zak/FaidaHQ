@@ -9,6 +9,7 @@ class FaidahNavbar extends HTMLElement {
       { key: 'home',     href: '/',             label: 'Home' },
       { key: 'about',    href: '/about/',       label: 'About' },
       { key: 'services', href: '/service/',     label: 'Services' },
+      { key: 'hospitality', href: '/hospitality/', label: 'Hospitality AI' },
       { key: 'projects', href: '/projects/',    label: 'Projects' },
       { key: 'contact',  href: '/contact/',     label: 'Contact' },
     ];
