@@ -11,10 +11,11 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_PASSWORD: postgres
+          # Throwaway CI database: local trust auth, no password needed.
+          POSTGRES_HOST_AUTH_METHOD: trust
         ports: ["5432:5432"]
         options: >-
-          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: denoland/setup-deno@v2
@@ -26,5 +27,4 @@ jobs:
         env:
           PGHOST: localhost
           PGUSER: postgres
-          PGPASSWORD: postgres
         run: bash tests/db/run.sh
