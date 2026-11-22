@@ -6,7 +6,7 @@
     "test:db": "bash tests/db/run.sh",
     "test:e2e": "deno test --allow-all tests/e2e/",
     "e2e:setup": "deno run --allow-all npm:playwright install chromium",
-    "serve": "deno run --allow-net --allow-read tests/e2e/serve.mjs"
+    "serve": "deno serve --port 8080 --allow-net --allow-read server.ts"
   },
   "imports": {
     "playwright": "npm:playwright@^1.48.0",
