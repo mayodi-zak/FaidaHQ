@@ -6,6 +6,7 @@ import type { Deps } from "./handlers.ts";
 import type { PlatformAi, ProviderName } from "./ai.ts";
 import { type CredentialRow, decryptPlatformAi, MASTER_KEY_ENV, type PlatformSettingsRow } from "./platform_ai.ts";
 import type { AdminAiStore } from "./admin_ai.ts";
+import type { LearnStore } from "./learn.ts";
 
 let client: SupabaseClient | null = null;
 let cached: Deps | null = null;
@@ -100,4 +101,49 @@ export async function userIdFromRequest(req: Request): Promise<string | null> {
   const { data, error } = await serviceClient().auth.getUser(token);
   if (error || !data?.user) return null;
   return data.user.id;
+}
+
+export function learnStore(db: SupabaseClient = serviceClient()): LearnStore {
+  const must = <T>(res: { data: T; error: { message: string } | null }, what: string): T => {
+    if (res.error) throw new Error(`${what}: ${res.error.message}`);
+    return res.data;
+  };
+  return {
+    async canManage(userId, businessId) {
+      const m = must(await db.from("business_members").select("role").eq("business_id", businessId).eq("user_id", userId).maybeSingle(), "membership") as { role: string } | null;
+      if (m && (m.role === "owner" || m.role === "admin")) return true;
+      return await adminAiStore(db).isPlatformAdmin(userId);
+    },
+    async candidates(businessId, sinceIso, limit) {
+      return must(
+        await db.from("conversations").select("id, escalation_reason")
+          .eq("business_id", businessId).eq("status", "escalated").is("learned_at", null)
+          .gte("last_message_at", sinceIso).order("last_message_at", { ascending: false }).limit(limit),
+        "candidates",
+      ) as { id: string; escalation_reason: string | null }[];
+    },
+    async messages(conversationId, businessId) {
+      return must(
+        await db.from("messages").select("role, content, created_at")
+          .eq("conversation_id", conversationId).eq("business_id", businessId)
+          .order("created_at").limit(40),
+        "messages",
+      ) as { role: "user" | "assistant" | "staff" | "system"; content: string; created_at: string }[];
+    },
+    async insertSuggestions(rows) {
+      must(await db.from("knowledge_suggestions").insert(rows), "save suggestions");
+    },
+    async markLearned(businessId, ids, atIso) {
+      must(await db.from("conversations").update({ learned_at: atIso }).eq("business_id", businessId).in("id", ids), "mark learned");
+    },
+    async businessesWithCandidates(sinceIso) {
+      const rows = must(
+        await db.from("conversations").select("business_id, businesses!inner(status)")
+          .eq("status", "escalated").is("learned_at", null).gte("last_message_at", sinceIso)
+          .eq("businesses.status", "active").limit(1000),
+        "businesses to learn from",
+      ) as { business_id: string }[];
+      return [...new Set(rows.map((r) => r.business_id))];
+    },
+  };
 }

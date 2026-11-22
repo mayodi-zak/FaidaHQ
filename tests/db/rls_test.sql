@@ -196,4 +196,30 @@ select set_config('request.jwt.claim.sub', '', false);
 -- 9. Demo seed loaded --------------------------------------------------------------
 select tests.expect((select count(*) from public.knowledge_items where business_id = '6f1d2c3b-4a5e-4f60-8a7b-9c0d1e2f3a4b'), 37, 'demo knowledge seeded');
 
+
+-- 6. Learning suggestions: reviewed only by owner/admin of that business ---------
+reset role;
+select set_config('request.jwt.claim.sub', '', false);
+insert into public.knowledge_suggestions (id, business_id, category, title, content) values
+  ('aaaaaaaa-0000-4000-8000-0000000000e1', :'a_id', 'faq', 'Pets?', 'Small dogs welcome'),
+  ('aaaaaaaa-0000-4000-8000-0000000000e2', :'a_id', 'faq', 'Parking?', ''),
+  ('bbbbbbbb-0000-4000-8000-0000000000e1', :'b_id', 'faq', 'B draft', 'x');
+set role authenticated;
+select set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', false);
+select tests.expect((select count(*) from public.knowledge_suggestions), 2, 'owner A sees only A suggestions');
+select tests.expect_denied($$insert into public.knowledge_suggestions (business_id, title) values ('$$ || :'a_id' || $$', 'forged')$$, 'members cannot write suggestions directly');
+select tests.expect_denied($$select public.review_knowledge_suggestion('bbbbbbbb-0000-4000-8000-0000000000e1', 'approve')$$, 'owner A cannot review B suggestion');
+select tests.expect_denied($$select public.review_knowledge_suggestion('aaaaaaaa-0000-4000-8000-0000000000e2', 'approve')$$, 'cannot approve a draft with no answer');
+select public.review_knowledge_suggestion('aaaaaaaa-0000-4000-8000-0000000000e1', 'approve');
+select tests.expect((select count(*) from public.knowledge_items where title = 'Pets?'), 1, 'approving adds it to the knowledge base');
+select tests.expect_denied($$select public.review_knowledge_suggestion('aaaaaaaa-0000-4000-8000-0000000000e1', 'approve')$$, 'cannot review twice');
+select public.review_knowledge_suggestion('aaaaaaaa-0000-4000-8000-0000000000e2', 'dismiss');
+select tests.expect((select count(*) from public.knowledge_suggestions where status = 'pending'), 0, 'dismissed draft is closed');
+select set_config('request.jwt.claim.sub', '33333333-3333-4333-8333-333333333333', false);
+select tests.expect((select count(*) from public.knowledge_suggestions), 2, 'staff can read suggestions');
+select tests.expect_denied($$select public.review_knowledge_suggestion('aaaaaaaa-0000-4000-8000-0000000000e2', 'dismiss')$$, 'staff cannot review suggestions');
+select set_config('request.jwt.claim.sub', '55555555-5555-4555-8555-555555555555', false);
+select tests.expect((select count(*) from public.knowledge_suggestions), 0, 'stranger sees no suggestions');
+reset role;
+
 \echo 'All RLS / isolation checks passed'

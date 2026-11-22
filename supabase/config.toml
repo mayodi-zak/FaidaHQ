@@ -29,3 +29,9 @@ verify_jwt = false
 # user is a FaidaHQ platform admin before touching any AI key.
 [functions.admin-ai-keys]
 verify_jwt = true
+
+# Signed-in owners/admins trigger it from the dashboard; the scheduled run uses
+# the LEARN_CRON_SECRET header instead of a user token, so JWT checking is off
+# and the function authenticates both callers itself.
+[functions.learn]
+verify_jwt = false

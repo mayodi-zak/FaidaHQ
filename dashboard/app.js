@@ -10,6 +10,7 @@
     ["overview", "Overview", "📊"],
     ["profile", "Business profile", "🏨"],
     ["knowledge", "Knowledge base", "📚"],
+    ["learning", "Assistant learning", "🌱"],
     ["conversations", "Conversations", "💬"],
     ["reservations", "Reservations", "📅"],
     ["customers", "Customers", "👥"],
@@ -169,7 +170,8 @@
         '<div class="kpis">' +
         kpi("Conversations (30 days)", FQ.num(r[0])) + kpi("Pending reservations", FQ.num(r[2]), r[2] ? "warning" : "") +
         kpi("Need a person", FQ.num(r[3]), r[3] ? "warning" : "") + kpi("New enquiries", FQ.num(r[4])) + "</div>" +
-        '<div class="card"><h2>Assistant replies this month</h2>' + FQ.meter(usage.used, usage.message_limit) + "</div>" +
+        '<div class="card"><h2>Assistant replies this month</h2>' + FQ.meter(usage.used, usage.message_limit) +
+        '<p class="muted">The count starts again from zero on ' + FQ.date(nextReset()) + " (00:00 UTC). Nothing needs to be done.</p></div>" +
         (tips.length ? '<div class="card"><h2>To do</h2><ul class="todo">' + tips.map(function (t) { return "<li>" + t + "</li>"; }).join("") + "</ul></div>" : "") +
         '<div class="card"><h2>Latest conversations</h2>' + (r[6].length ? table(["Started", "Last message", "Messages", "Status"], r[6].map(function (c2) {
           return ['<a href="#conversations/' + c2.id + '">' + FQ.date(c2.started_at, true) + "</a>", FQ.ago(c2.last_message_at), c2.message_count, statusPill(c2.status)];
@@ -177,6 +179,8 @@
     });
   };
 
+  // Replies are counted from the 1st of the month (UTC), so the "reset" is just the calendar turning over.
+  function nextReset() { var n = new Date(); return new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth() + 1, 1)).toISOString(); }
   function kpi(label, value, tone) { return '<div class="kpi ' + (tone || "") + '"><span>' + label + "</span><strong>" + value + "</strong></div>"; }
   function statusPill(s) {
     var tone = { open: "info", escalated: "warning", closed: "muted", pending: "warning", confirmed: "good", declined: "critical", cancelled: "muted", new: "info", in_progress: "warning", resolved: "good" }[s] || "muted";
@@ -320,6 +324,52 @@
           });
       }
       draw();
+    });
+  };
+
+  // --- assistant learning ------------------------------------------------------
+  // The assistant drafts knowledge entries from conversations it could not answer.
+  // Nothing reaches guests until an owner/admin approves it here.
+  RENDER.learning = function (box) {
+    return FQ.q(FQ.db.from("knowledge_suggestions").select("*").eq("business_id", bid()).eq("status", "pending").order("created_at", { ascending: false }), "Load suggestions").then(function (list) {
+      box.innerHTML = '<div class="card"><h2>Assistant learning</h2>' +
+        "<p>When the assistant cannot answer a guest, it drafts a knowledge entry from the conversation (using your team's reply when there is one). " +
+        "You approve, edit or dismiss each draft. Nothing is shown to guests until you approve it.</p>" +
+        (canEdit() ? '<button class="btn" id="learn-now">Check recent conversations now</button> ' : "") +
+        '<span class="muted">Also runs automatically if your platform administrator has scheduled it.</span></div>' +
+        '<div class="card"><h2>Suggested additions (' + list.length + ")</h2>" + (list.length ? list.map(function (x) {
+          return '<div class="suggestion"><strong>' + FQ.esc(x.title) + '</strong> <span class="pill">' + FQ.esc(CATEGORIES[x.category] || x.category) + "</span>" +
+            (x.content ? "<p>" + FQ.esc(x.content) + "</p>" : '<p class="muted">Guests asked this and no answer was recorded. Add the answer to approve it.</p>') +
+            (x.source_conversation_id ? '<a href="#conversations/' + x.source_conversation_id + '">See the conversation</a> ' : "") +
+            (canEdit() ? '<button class="btn" data-ok="' + x.id + '">Review and approve</button> <button class="btn ghost" data-no="' + x.id + '">Dismiss</button>' : "") + "</div>";
+        }).join("") : '<p class="empty">No suggestions right now. They appear here when guests ask something the assistant could not answer.</p>') + "</div>";
+      function review(id, action, extra) {
+        var args = Object.assign({ p_id: id, p_action: action }, extra || {});
+        return FQ.q(FQ.db.rpc("review_knowledge_suggestion", args), "Save").then(function () { FQ.toast(action === "approve" ? "Added to your knowledge base" : "Dismissed"); return RENDER.learning(box); });
+      }
+      if ($("#learn-now")) $("#learn-now").onclick = function () {
+        var btn = this; btn.disabled = true;
+        FQ.db.functions.invoke("learn", { body: { business_id: bid() } }).then(function (r) {
+          btn.disabled = false;
+          if (r.error) return FQ.toast("Could not check conversations. Make sure the learn function is deployed.", "error");
+          FQ.toast(r.data.created ? r.data.created + " new suggestion(s)" : "Nothing new to learn from");
+          RENDER.learning(box);
+        });
+      };
+      $$("[data-no]", box).forEach(function (b) { b.onclick = function () { review(b.dataset.no, "dismiss"); }; });
+      $$("[data-ok]", box).forEach(function (b) {
+        b.onclick = function () {
+          var x = list.filter(function (i) { return i.id === b.dataset.ok; })[0];
+          FQ.modal("Review suggestion",
+            '<div class="form-grid">' + sel("Type", "category", x.category, CATEGORIES) + inp("Title", "title", x.title, 'maxlength="200" required') +
+            txt("Answer guests should get (check it is correct)", "content", x.content, 4000) + "</div>",
+            function (form) {
+              var d = FQ.formData(form);
+              if (!d.title || !d.content) throw new Error("Add a title and the answer.");
+              return review(x.id, "approve", { p_title: d.title, p_content: d.content, p_category: d.category });
+            }, "Add to knowledge base");
+        };
+      });
     });
   };
 

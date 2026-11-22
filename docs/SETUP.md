@@ -82,6 +82,7 @@ supabase functions deploy widget
 supabase functions deploy chat
 supabase functions deploy enquiry
 supabase functions deploy admin-ai-keys
+supabase functions deploy learn
 ```
 
 `supabase/config.toml` marks the first three as public (`verify_jwt = false`) because website visitors are not signed in. They protect themselves: input validation, business status checks, allowed-website checks, per-visitor and per-IP rate limits, and monthly plan limits. `admin-ai-keys` needs a signed-in user and checks on the server that the user is a platform admin.
@@ -148,6 +149,29 @@ How the keys are protected:
 - To change a key, click **Replace / edit**. To remove it, click **Delete**.
 
 A business can still pick its own provider and model in **Dashboard → AI configuration**.
+
+## Monthly reply limits and the self-improving assistant
+
+**How the monthly limit "resets".** There is no reset job and no stored balance. Every AI reply is one row in `ai_usage`, and the limit check counts the rows created since the 1st of the current month (UTC, `date_trunc('month', now())`). When the calendar turns over, the count is zero again by itself. The dashboard shows the date it starts again.
+
+**Assistant learning.** When the assistant escalates a conversation, the `learn` function reads it and drafts knowledge entries (using the staff reply when there is one, and leaving the answer blank when there is not). Drafts appear under *Assistant learning* in the dashboard; an owner or admin approves, edits or dismisses each one, and only approved drafts join the knowledge base. Guest text is treated as untrusted and no draft is ever published automatically. Learning does not use up a business's monthly replies.
+
+- Owners/admins press *Check recent conversations now* (limited to 5 runs an hour per business).
+- To run it automatically for every business, set a secret and schedule a weekly call:
+
+```bash
+supabase secrets set LEARN_CRON_SECRET=<a long random string>
+```
+
+```sql
+-- Supabase SQL editor (needs the pg_cron and pg_net extensions)
+select cron.schedule('faidahq-learn', '0 3 * * 1', $$
+  select net.http_post(
+    url := 'https://<project-ref>.supabase.co/functions/v1/learn',
+    headers := '{"Content-Type":"application/json","x-cron-secret":"<the same secret>"}'::jsonb,
+    body := '{"all": true}'::jsonb);
+$$);
+```
 
 ## 7. Onboard a new hotel or restaurant
 
