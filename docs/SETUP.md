@@ -157,21 +157,28 @@ A business can still pick its own provider and model in **Dashboard → AI confi
 **Assistant learning.** When the assistant escalates a conversation, the `learn` function reads it and drafts knowledge entries (using the staff reply when there is one, and leaving the answer blank when there is not). Drafts appear under *Assistant learning* in the dashboard; an owner or admin approves, edits or dismisses each one, and only approved drafts join the knowledge base. Guest text is treated as untrusted and no draft is ever published automatically. Learning does not use up a business's monthly replies.
 
 - Owners/admins press *Check recent conversations now* (limited to 5 runs an hour per business).
-- To run it automatically for every business, set a secret and schedule a weekly call:
+- To run it automatically for every business, create one shared secret and a weekly job. The secret is kept in Supabase Vault, so it never appears in the job text. Generate a long random string (for example `openssl rand -hex 32`), then:
 
 ```bash
-supabase secrets set LEARN_CRON_SECRET=<a long random string>
+supabase secrets set LEARN_CRON_SECRET=<the string>
 ```
 
 ```sql
--- Supabase SQL editor (needs the pg_cron and pg_net extensions)
-select cron.schedule('faidahq-learn', '0 3 * * 1', $$
+-- Supabase SQL editor. Replace <the string> and <project-ref>.
+create extension if not exists pg_net;
+create extension if not exists pg_cron;
+select vault.create_secret('<the string>', 'learn_cron_secret', 'Shared secret for the weekly learn function');
+
+select cron.schedule('faidahq-learn', '0 3 * * 1', $job$
   select net.http_post(
     url := 'https://<project-ref>.supabase.co/functions/v1/learn',
-    headers := '{"Content-Type":"application/json","x-cron-secret":"<the same secret>"}'::jsonb,
+    headers := jsonb_build_object('Content-Type', 'application/json',
+      'x-cron-secret', (select decrypted_secret from vault.decrypted_secrets where name = 'learn_cron_secret')),
     body := '{"all": true}'::jsonb);
-$$);
+$job$);
 ```
+
+It runs Mondays at 03:00 UTC. Check it with `select * from cron.job;`, and see the result of the last call with `select status_code, content from net._http_response order by id desc limit 1;` (a healthy run returns `{"reviewed":…,"created":…,"failed":0}`). To rotate the secret, set both copies again: `supabase secrets set` and `select vault.update_secret(id, '<new>') from vault.secrets where name = 'learn_cron_secret';`.
 
 ## 7. Onboard a new hotel or restaurant
 
