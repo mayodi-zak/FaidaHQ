@@ -1,4 +1,4 @@
-// Browser tests for the chat widget. Run: node --test tests/e2e
+// Browser tests for the chat widget. Run: deno task test:e2e
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";

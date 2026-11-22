@@ -1,5 +1,5 @@
 // Browser tests for the business dashboard and admin page, against a mocked
-// Supabase API (no real project needed). Run: node --test tests/e2e
+// Supabase API (no real project needed). Run: deno task test:e2e
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";

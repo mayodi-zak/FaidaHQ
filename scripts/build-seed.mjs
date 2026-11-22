@@ -1,6 +1,6 @@
 // Generates supabase/migrations/20261122135608_seed.sql from demo/demo-business.json, so the demo
 // website (offline mode) and the database demo share one source of truth.
-// Usage: node scripts/build-seed.mjs
+// Usage: deno task seed
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
