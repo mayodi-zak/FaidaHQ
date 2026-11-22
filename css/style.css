@@ -603,6 +603,7 @@ html, body { overflow-x: hidden; }
 .card-category-tag.cat-automation { background-color: rgba(234, 88, 12, .85); }
 .card-category-tag.cat-ussd       { background-color: rgba(124, 58, 237, .85); }
 .card-category-tag.cat-mobile     { background-color: rgba(6, 182, 212, .85); }
+.card-category-tag.cat-ai         { background-color: rgba(16, 185, 129, .9); }
 
 /* 5a. Service sidebar top accent border */
 .service-sidebar-card {
