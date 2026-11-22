@@ -98,6 +98,7 @@ test("demo: mobile layout fills the screen without horizontal scroll", async () 
   // input font-size >= 16px prevents iOS zoom on focus
   const fs = await w(page).locator(".fq-input").evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
   assert.ok(fs >= 16);
+  await page.waitForTimeout(400);
   await page.screenshot({ path: "test-results/mobile-demo.png" });
   await w(page).locator('[data-act="close"]').click();
   assert.equal(await w(page).locator(".fq-panel").isHidden(), true);
