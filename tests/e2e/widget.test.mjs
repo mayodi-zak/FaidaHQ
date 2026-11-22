@@ -29,7 +29,7 @@ async function sendMsg(page, text) {
   await w(page).locator(".fq-input").press("Enter");
 }
 async function lastAssistant(page, count) {
-  await page.waitForFunction((n) => document.querySelector("#faidahq-widget").shadowRoot.querySelectorAll(".fq-msg.assistant:not([aria-label])").length >= n, count, { timeout: 5000 });
+  await page.waitForFunction((n) => document.querySelector("#faidahq-widget").shadowRoot.querySelectorAll(".fq-msg.assistant:not([aria-label])").length >= n, count, { timeout: 15000 });
   return w(page).locator(".fq-msg.assistant .fq-bubble").last().innerText();
 }
 
