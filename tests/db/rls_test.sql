@@ -218,8 +218,9 @@ select tests.expect((select count(*) from public.knowledge_suggestions where sta
 select set_config('request.jwt.claim.sub', '33333333-3333-4333-8333-333333333333', false);
 select tests.expect((select count(*) from public.knowledge_suggestions), 2, 'staff can read suggestions');
 select tests.expect_denied($$select public.review_knowledge_suggestion('aaaaaaaa-0000-4000-8000-0000000000e2', 'dismiss')$$, 'staff cannot review suggestions');
-select set_config('request.jwt.claim.sub', '55555555-5555-4555-8555-555555555555', false);
-select tests.expect((select count(*) from public.knowledge_suggestions), 0, 'stranger sees no suggestions');
+select set_config('request.jwt.claim.sub', '22222222-2222-4222-8222-222222222222', false);
+select tests.expect((select count(*) from public.knowledge_suggestions), 1, 'owner B sees only B suggestions');
+select tests.expect((select count(*) from public.knowledge_suggestions where title = 'Pets?'), 0, 'owner B cannot see A suggestions');
 reset role;
 
 \echo 'All RLS / isolation checks passed'
