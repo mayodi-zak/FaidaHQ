@@ -17,6 +17,9 @@ async function newPage(opts = {}) {
   const page = await ctx.newPage();
   page.errors = [];
   page.on("pageerror", (e) => page.errors.push(String(e)));
+  // The demo-mode tests must not depend on (or call) the real project in
+  // js/faidahq-config.js, so serve an empty public config.
+  await page.route("**/js/faidahq-config.js", (r) => r.fulfill({ contentType: "text/javascript", body: "window.FaidaHQConfig={};" }));
   return page;
 }
 const w = (page) => page.locator("#faidahq-widget");
