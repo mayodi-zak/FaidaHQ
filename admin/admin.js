@@ -126,7 +126,7 @@
         })) + '<p class="muted">Payments are not processed yet. Record setup fees and subscription status manually per business.</p></div>' +
         '<div class="card"><h2>Onboarding a client</h2><ol class="todo muted" style="padding-left:18px;margin:0">' +
         '<li><strong>New business</strong>, then add the owner by email.</li><li>The owner sets <em>Chat widget look</em> in their dashboard profile.</li>' +
-        '<li><strong>Test chat</strong>, then <strong>Copy client link</strong> to share.</li></ol></div></aside></div>';
+        '<li><strong>Test chat</strong> to try their assistant yourself (only you, signed in, can use it) before going live.</li></ol></div></aside></div>';
       function draw(t) {
         t = (t || "").toLowerCase();
         var shown = rows.filter(function (b) { return !t || (b.name + " " + b.slug + " " + (b.owner_email || "")).toLowerCase().indexOf(t) >= 0; });
@@ -140,7 +140,7 @@
             FQ.num(b.conversations_30d), FQ.num(b.pending_reservations),
             '<div class="row-actions"><button class="btn small" data-manage="' + b.id + '">Manage</button>' +
               (b.status === "active"
-                ? '<a class="btn small ghost" href="/preview/?b=' + b.id + '" target="_blank" rel="noopener">Test chat</a><button class="btn small ghost" data-copylink="' + b.id + '">Copy client link</button>'
+                ? '<a class="btn small ghost" href="#test/' + b.id + '">Test chat</a>'
                 : '<small class="muted">Activate to test</small>') + "</div>"];
         }));
         $$("[data-manage]").forEach(function (btn) {

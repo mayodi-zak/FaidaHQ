@@ -243,23 +243,3 @@ test("live: replies are rendered as text, not HTML (XSS safe)", async () => {
   assert.equal(await w(page).locator(".fq-msg img").count(), 0);
   assert.match(await w(page).locator(".fq-msg.user").innerText(), /<b>hi<\/b>/);
 });
-
-test("preview page: opens the chat for the business in the link, can start over", async () => {
-  const page = await newPage();
-  // Give this page a live (mocked) API instead of the empty config used by the demo tests.
-  await page.route("**/js/faidahq-config.js", (r) => r.fulfill({ contentType: "text/javascript", body: 'window.FaidaHQConfig={functionsUrl:"https://api.test/functions/v1"};' }));
-  const calls = await mockApi(page, {
-    "GET /widget": () => CONFIG,
-    "POST /chat": () => ({ json: { conversation_id: "11111111-1111-4111-8111-111111111111", reply: "Check-in is from 2pm." } }),
-  });
-  await page.goto(srv.url + "/preview/?b=" + BIZ);
-  await page.getByRole("heading", { name: "Try the Hotel Live assistant" }).waitFor();
-  await w(page).locator(".fq-input").waitFor(); // chat opens by itself
-  await page.getByRole("button", { name: "Check-in times" }).click();
-  assert.match(await lastAssistant(page, 2), /Check-in is from 2pm/);
-  assert.equal(calls.find((c) => c.path === "/chat").body.business_id, BIZ);
-
-  const bad = await newPage();
-  await bad.goto(srv.url + "/preview/?b=not-an-id");
-  await bad.getByText("missing or invalid").waitFor();
-});
