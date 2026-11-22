@@ -96,8 +96,14 @@
             esc(b.plan_code) + "<br><small>" + esc(b.subscription_status) + (b.setup_fee_paid ? " · setup paid" : " · setup unpaid") + "</small>",
             FQ.num(b.ai_replies_month) + " / " + FQ.num(b.effective_limit) + ' <small class="' + (pct >= 80 ? "warn" : "muted") + '">(' + pct + "%)</small>",
             FQ.num(b.conversations_30d), FQ.num(b.pending_reservations),
-            '<button class="link" data-manage="' + b.id + '">Manage</button>'];
+            '<button class="link" data-manage="' + b.id + '">Manage</button><br>' +
+              (b.status === "active"
+                ? '<a class="link" href="/preview/?b=' + b.id + '" target="_blank" rel="noopener">Test chat</a><br><button class="link" data-copylink="' + b.id + '">Copy client link</button>'
+                : '<small class="muted">Activate to test</small>')];
         }));
+        $$("[data-copylink]").forEach(function (btn) {
+          btn.onclick = function () { navigator.clipboard.writeText(location.origin + "/preview/?b=" + btn.dataset.copylink).then(function () { FQ.toast("Client link copied"); }); };
+        });
         $$("[data-manage]").forEach(function (btn) {
           btn.onclick = function () { manage(rows.filter(function (b) { return b.id === btn.dataset.manage; })[0]); };
         });

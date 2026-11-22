@@ -231,6 +231,8 @@ test("admin: non-admins are refused; admins see platform overview", async () => 
   const { page: p2, writes } = await openDashboard("/admin/", { admin: true });
   await p2.locator("#tbl").getByText(BIZ.name).waitFor();
   assert.match(await p2.locator(".kpis").innerText(), /850/);
+  // Admins can open any active client's assistant to demo it.
+  assert.equal(await p2.getByRole("link", { name: "Test chat" }).getAttribute("href"), "/preview/?b=" + BIZ.id);
   await p2.getByRole("button", { name: "Manage" }).click();
   await p2.locator('.modal select[name="status"]').selectOption("suspended");
   await p2.locator(".modal").getByRole("button", { name: "Save" }).click();

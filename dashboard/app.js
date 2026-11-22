@@ -214,10 +214,14 @@
         (canEdit() ? '<div class="full"><button class="btn">Save profile</button></div>' : '<p class="full muted">Only owners and admins can edit the profile.</p>') + "</form>" +
         '<div class="card"><h2>Add the chat to your website</h2><p>Paste this just before <code>&lt;/body&gt;</code> on every page of your website:</p>' +
         '<pre class="code" id="embed">' + esc(embed) + '</pre><button class="btn ghost" id="copy">Copy code</button> ' +
-        '<button class="btn ghost" id="preview">Preview the chat here</button></div>';
+        '<button class="btn ghost" id="preview">Preview the chat here</button></div>' +
+        '<div class="card"><h2>Show it to a client</h2><p>A shareable page where anyone can try this assistant, without installing anything on a website. It uses the live assistant, so it answers from the knowledge base and counts toward the monthly replies.</p>' +
+        '<pre class="code">' + esc(location.origin + "/preview/?b=" + b.id) + '</pre><a class="btn" href="/preview/?b=' + b.id + '" target="_blank" rel="noopener">Open preview page</a> <button class="btn ghost" id="copy-preview">Copy link</button>' +
+        ((b.allowed_origins || []).length ? '<p class="muted">Your "allowed websites" list is set, so add <code>' + esc(location.origin) + '</code> to it or this page will be refused.</p>' : "") + "</div>";
       if (dis) $$("#pf input,#pf select,#pf textarea").forEach(function (f) { f.disabled = true; });
       $("#copy").onclick = function () { navigator.clipboard.writeText(embed).then(function () { FQ.toast("Copied"); }); };
       $("#preview").onclick = function () { previewWidget(b.id); };
+      $("#copy-preview").onclick = function () { navigator.clipboard.writeText(location.origin + "/preview/?b=" + b.id).then(function () { FQ.toast("Link copied"); }); };
       $("#pf").addEventListener("submit", function (e) {
         e.preventDefault();
         var d = FQ.formData(e.target);
