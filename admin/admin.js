@@ -29,27 +29,65 @@
   function render(session) {
     app.innerHTML = '<div class="layout"><aside class="sidebar"><div class="side-brand"><img src="/img/logo-white.png" alt="FaidaHQ"></div>' +
       '<div class="side-biz"><strong class="biz-name">Platform admin</strong></div><nav>' +
-      '<a href="#businesses" data-nav="businesses">🏢 Businesses</a><a href="#messages" data-nav="messages">✉️ Website messages</a><a href="#ai" data-nav="ai">🤖 AI providers</a><a href="/dashboard/">📊 Business dashboard</a></nav>' +
+      '<a href="#businesses" data-nav="businesses">' + FQ.icon("building") + 'Businesses</a><a href="#messages" data-nav="messages">' + FQ.icon("mail") + 'Website messages</a><a href="#ai" data-nav="ai">' + FQ.icon("ai") + 'AI providers</a><a href="/dashboard/">' + FQ.icon("overview") + 'Business dashboard</a></nav>' +
       '<div class="side-foot"><span>' + esc(session.user.email) + '</span><button class="link light" id="so">Sign out</button></div></aside>' +
-      '<div class="main"><header class="topbar"><h1 id="title">Businesses</h1></header><section class="view" id="view"><p class="muted">Loading…</p></section></div></div>';
+      '<div class="main"><header class="topbar"><button class="icon-btn menu" id="menu" aria-label="Menu">☰</button><h1 id="title">Businesses</h1></header><section class="view" id="view"><p class="muted">Loading…</p></section></div></div>';
     $("#so").onclick = function () { FQ.db.auth.signOut().then(function () { location.reload(); }); };
+    $("#menu").onclick = function () { $(".sidebar").classList.toggle("open"); };
     window.onhashchange = route;
     route();
   }
 
   function route() {
-    var page = location.hash === "#ai" ? "ai" : location.hash === "#messages" ? "messages" : "businesses";
+    var page = location.hash === "#ai" ? "ai" : location.hash === "#messages" ? "messages" : location.hash.indexOf("#test/") === 0 ? "test" : "businesses";
     $$("[data-nav]").forEach(function (a) { a.classList.toggle("active", a.dataset.nav === page); });
-    $("#title").textContent = page === "ai" ? "AI providers" : page === "messages" ? "Website messages" : "Businesses";
+    $(".sidebar").classList.remove("open");
+    $("#title").textContent = page === "ai" ? "AI providers" : page === "messages" ? "Website messages" : page === "test" ? "Test chat" : "Businesses";
     $("#view").innerHTML = '<p class="muted">Loading…</p>';
-    if (page === "ai") loadAi(); else if (page === "messages") loadMessages(); else load();
+    if (page === "ai") loadAi(); else if (page === "messages") loadMessages(); else if (page === "test") loadTest(location.hash.slice(6)); else load();
+  }
+
+  // Test the real assistant of any business, as an admin. The widget sends the admin's
+  // sign-in token (FaidaHQAuth), which is what lets private test assistants answer.
+  var testingId = null;
+  function loadTest(id) {
+    if (!/^[0-9a-f-]{36}$/i.test(id)) { location.hash = "#businesses"; return; }
+    // The chat widget can only be loaded once per page, so switching business reloads the page.
+    if (testingId && testingId !== id) return location.reload();
+    FQ.q(FQ.db.from("businesses").select("id, name, status, public_chat").eq("id", id).single(), "Load business").then(function (b) {
+      $("#title").textContent = "Test chat: " + b.name;
+      $("#view").innerHTML = '<div class="card"><p>This is the <strong>real, live assistant</strong> for ' + esc(b.name) + ' (bottom right of the screen). It answers from their knowledge base. ' +
+        'Only you, signed in here, can use it' + (b.public_chat ? "" : ", because this assistant is private") + '. Each reply counts toward their monthly replies.</p>' +
+        '<div class="toolbar"><button class="btn ghost" data-ask="What time is check-in and check-out?">Check-in times</button> ' +
+        '<button class="btn ghost" data-ask="What are your room options and prices?">Rooms and prices</button> ' +
+        '<button class="btn ghost" data-ask="What is on the menu?">Menu</button> ' +
+        '<button class="btn ghost" data-ask="Do you allow pets?">Something it may not know</button> ' +
+        '<button class="btn" data-book="hotel">Request a booking</button></div>' +
+        '<p><button class="link" id="reset-chat">Start a new conversation</button> · <a class="link" href="#businesses">Back to businesses</a></p></div>';
+      if (!testingId) {
+        testingId = id;
+        var sc = document.createElement("script");
+        sc.src = "/widget.js";
+        sc.setAttribute("data-business-id", id);
+        sc.setAttribute("data-api-url", FQ.cfg.functionsUrl);
+        sc.setAttribute("data-open", "true");
+        document.body.appendChild(sc);
+      }
+      function whenWidget(fn) {
+        if (window.FaidaHQWidget) fn(window.FaidaHQWidget);
+        else document.addEventListener("faidahq:ready", function () { fn(window.FaidaHQWidget); }, { once: true });
+      }
+      $$("[data-ask]").forEach(function (btn) { btn.onclick = function () { whenWidget(function (w) { w.send(btn.dataset.ask); }); }; });
+      $$("[data-book]").forEach(function (btn) { btn.onclick = function () { whenWidget(function (w) { w.book(btn.dataset.book); }); }; });
+      $("#reset-chat").onclick = function () { try { localStorage.removeItem("faidahq:" + id); } catch (e) {} location.reload(); };
+    });
   }
 
   // Messages sent from the contact page on faidahq.com.
   function loadMessages() {
     FQ.q(FQ.db.from("contact_messages").select("*").order("created_at", { ascending: false }).limit(200), "Load messages").then(function (rows) {
       var view = $("#view");
-      view.innerHTML = '<div class="card">' + (rows.length ? rows.map(function (m) {
+      view.innerHTML = '<div class="card" style="max-width:1000px">' + (rows.length ? rows.map(function (m) {
         return '<div class="suggestion"><strong>' + esc(m.subject) + '</strong> <span class="pill ' + (m.status === "new" ? "warning" : "good") + '">' + esc(m.status) + "</span>" +
           '<p class="muted">' + esc(m.name) + ' · <a href="mailto:' + esc(m.email) + '?subject=' + encodeURIComponent("Re: " + m.subject) + '">' + esc(m.email) + "</a> · " + FQ.date(m.created_at, true) +
           (m.notified ? "" : " · alert email not sent") + "</p>" +
@@ -80,11 +118,15 @@
       view.innerHTML = '<div class="kpis">' +
         k("Businesses", rows.length + " (" + active + " active)") + k("Monthly recurring (paid subs)", "KES " + FQ.num(mrr)) +
         k("AI replies this month", FQ.num(replies)) + k("AI tokens this month", FQ.num(tokens)) + "</div>" +
+        '<div class="cols"><div>' +
         '<div class="toolbar"><input id="find" type="search" placeholder="Search businesses" aria-label="Search"><button class="btn" id="new">+ New business</button></div>' +
-        '<div id="tbl"></div>' +
-        '<div class="card" style="margin-top:18px"><h2>Plans</h2>' + table(["Code", "Name", "Setup fee", "Monthly", "Replies / month"], plans.map(function (p) {
+        '<div id="tbl"></div></div>' +
+        '<aside class="rail"><div class="card"><h2>Plans</h2>' + table(["Code", "Name", "Setup fee", "Monthly", "Replies / month"], plans.map(function (p) {
           return [esc(p.code), esc(p.name), FQ.money(p.setup_fee, p.currency), FQ.money(p.monthly_price, p.currency), FQ.num(p.monthly_message_limit)];
-        })) + '<p class="muted">Payments are not processed yet. Record setup fees and subscription status manually per business.</p></div>';
+        })) + '<p class="muted">Payments are not processed yet. Record setup fees and subscription status manually per business.</p></div>' +
+        '<div class="card"><h2>Onboarding a client</h2><ol class="todo muted" style="padding-left:18px;margin:0">' +
+        '<li><strong>New business</strong>, then add the owner by email.</li><li>The owner sets <em>Chat widget look</em> in their dashboard profile.</li>' +
+        '<li><strong>Test chat</strong>, then <strong>Copy client link</strong> to share.</li></ol></div></aside></div>';
       function draw(t) {
         t = (t || "").toLowerCase();
         var shown = rows.filter(function (b) { return !t || (b.name + " " + b.slug + " " + (b.owner_email || "")).toLowerCase().indexOf(t) >= 0; });
@@ -96,14 +138,11 @@
             esc(b.plan_code) + "<br><small>" + esc(b.subscription_status) + (b.setup_fee_paid ? " · setup paid" : " · setup unpaid") + "</small>",
             FQ.num(b.ai_replies_month) + " / " + FQ.num(b.effective_limit) + ' <small class="' + (pct >= 80 ? "warn" : "muted") + '">(' + pct + "%)</small>",
             FQ.num(b.conversations_30d), FQ.num(b.pending_reservations),
-            '<button class="link" data-manage="' + b.id + '">Manage</button><br>' +
+            '<div class="row-actions"><button class="btn small" data-manage="' + b.id + '">Manage</button>' +
               (b.status === "active"
-                ? '<a class="link" href="/preview/?b=' + b.id + '" target="_blank" rel="noopener">Test chat</a><br><button class="link" data-copylink="' + b.id + '">Copy client link</button>'
-                : '<small class="muted">Activate to test</small>')];
+                ? '<a class="btn small ghost" href="/preview/?b=' + b.id + '" target="_blank" rel="noopener">Test chat</a><button class="btn small ghost" data-copylink="' + b.id + '">Copy client link</button>'
+                : '<small class="muted">Activate to test</small>') + "</div>"];
         }));
-        $$("[data-copylink]").forEach(function (btn) {
-          btn.onclick = function () { navigator.clipboard.writeText(location.origin + "/preview/?b=" + btn.dataset.copylink).then(function () { FQ.toast("Client link copied"); }); };
-        });
         $$("[data-manage]").forEach(function (btn) {
           btn.onclick = function () { manage(rows.filter(function (b) { return b.id === btn.dataset.manage; })[0]); };
         });
@@ -114,29 +153,31 @@
     });
   }
 
-  function k(label, v) { return '<div class="kpi"><span>' + label + "</span><strong style=\"font-size:20px\">" + v + "</strong></div>"; }
-  function table(head, rows) {
-    return '<div class="table-wrap"><table><thead><tr>' + head.map(function (h) { return "<th>" + h + "</th>"; }).join("") + "</tr></thead><tbody>" +
-      rows.map(function (r) { return "<tr>" + r.map(function (c) { return "<td>" + c + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table></div>";
-  }
+  function k(label, v) { return '<div class="kpi sm"><span>' + label + "</span><strong>" + v + "</strong></div>"; }
+  var table = FQ.table;
   function options(list, value) {
     return list.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (o[0] === value ? " selected" : "") + ">" + esc(o[1]) + "</option>"; }).join("");
   }
 
   function manage(b) {
+    FQ.q(FQ.db.from("businesses").select("public_chat").eq("id", b.id).single(), "Load business").then(function (extra) { manageModal(b, extra.public_chat); });
+  }
+
+  function manageModal(b, publicChat) {
     FQ.modal("Manage " + b.name,
       '<div class="form-grid">' +
       '<label>Status<select name="status">' + options([["active", "Active"], ["suspended", "Suspended (widget stops answering)"], ["pending", "Pending"]], b.status) + "</select></label>" +
       '<label>Plan<select name="plan_code">' + options(plans.map(function (p) { return [p.code, p.name + " (" + FQ.num(p.monthly_message_limit) + " replies)"]; }), b.plan_code) + "</select></label>" +
       '<label>Subscription<select name="subscription_status">' + options([["trial", "Trial"], ["active", "Active (paid)"], ["past_due", "Past due"], ["cancelled", "Cancelled"]], b.subscription_status) + "</select></label>" +
       '<label>Monthly reply limit override<input name="monthly_message_limit" type="number" min="0" placeholder="Use plan limit" value="' + (b.monthly_message_limit == null ? "" : b.monthly_message_limit) + '"></label>' +
+      '<label class="check full"><input type="checkbox" name="public_chat"' + (publicChat ? " checked" : "") + "> Public chat (anyone on the internet can use it). Untick for test and demo businesses: only signed-in admins and members can chat.</label>" +
       '<label class="check full"><input type="checkbox" name="setup_fee_paid"' + (b.setup_fee_paid ? " checked" : "") + "> Setup fee paid</label>" +
       '<label class="full">Add an owner by email (they must have signed up)<input name="owner_email" type="email" placeholder="owner@hotel.co.ke"></label></div>',
       function (form) {
         var d = FQ.formData(form);
         var limit = d.monthly_message_limit === "" ? null : parseInt(d.monthly_message_limit, 10);
         if (limit !== null && !(limit >= 0)) throw new Error("Limit must be 0 or more.");
-        var patch = { status: d.status, plan_code: d.plan_code, subscription_status: d.subscription_status, setup_fee_paid: d.setup_fee_paid, monthly_message_limit: limit };
+        var patch = { status: d.status, plan_code: d.plan_code, subscription_status: d.subscription_status, setup_fee_paid: d.setup_fee_paid, monthly_message_limit: limit, public_chat: d.public_chat };
         return FQ.q(FQ.db.from("businesses").update(patch).eq("id", b.id), "Save").then(function () {
           if (d.owner_email) return FQ.q(FQ.db.rpc("add_business_member", { p_business_id: b.id, p_email: d.owner_email, p_role: "owner" }), "Add owner");
         }).then(function () { FQ.toast("Saved"); load(); });
@@ -203,20 +244,20 @@
       (data.encryption_ready ? "" :
         '<div class="card" style="border-color:var(--warning)"><h2>⚠️ Encryption key missing</h2><p>Before you can save keys, set the secret <code>FAIDAHQ_ENCRYPTION_KEY</code> once:</p>' +
         '<pre>supabase secrets set FAIDAHQ_ENCRYPTION_KEY="$(openssl rand -base64 32)"</pre><p class="muted">Keep a private copy. If it changes, saved keys must be entered again.</p></div>') +
-      '<div class="card"><h2>Which AI answers guests</h2><form id="defaults" class="form-grid">' +
+      '<div class="cols"><aside class="rail" style="order:2"><div class="card"><h2>Which AI answers guests</h2><form id="defaults" class="form-grid" style="grid-template-columns:1fr">' +
       '<label>Main provider<select name="default_provider">' + options([["", "Server setting" + envDefault]].concat(choices), data.default_provider || "") + "</select></label>" +
       '<label>Fallback provider (used if the main one fails)<select name="fallback_provider">' + options([["", "None"]].concat(choices), data.fallback_provider || "") + "</select></label>" +
       '<div class="full"><button class="btn" type="submit">Save choice</button></div></form>' +
-      '<p class="muted">A business can still choose its own provider and model in its dashboard (AI configuration).</p></div>' +
-      '<div class="card"><h2>API keys</h2><p class="muted">Keys are encrypted on the server and can never be shown again, only replaced or deleted.</p>' +
+      '<p class="muted">A business can still choose its own provider and model in its dashboard (AI configuration).</p></div></aside>' +
+      '<div style="order:1;min-width:0"><div class="card"><h2>API keys</h2><p class="muted">Keys are encrypted on the server and can never be shown again, only replaced or deleted.</p>' +
       table(["Provider", "Status", "Default model", ""], provs.map(function (p) {
         return ["<strong>" + esc(p.label) + "</strong>" + (p.base_url ? '<br><small class="muted">' + esc(p.base_url) + "</small>" : ""),
           statusPill(p) + (p.updated_at ? '<br><small class="muted">Updated ' + esc(FQ.date(p.updated_at, true)) + "</small>" : ""),
           esc(p.default_model || "—"),
           '<button class="btn small" data-key="' + p.provider + '">' + (p.key_saved ? "Replace / edit" : "Add key") + "</button> " +
           (p.key_saved || p.env_configured ? '<button class="btn small ghost" data-test="' + p.provider + '">Test</button> ' : "") +
-          (p.key_saved ? '<button class="link" data-del="' + p.provider + '">Delete</button>' : "")];
-      })) + "</div>";
+          (p.key_saved ? '<button class="btn small ghost" data-del="' + p.provider + '">Delete</button>' : "")];
+      })) + "</div></div></div>";
 
     $("#defaults").onsubmit = function (e) {
       e.preventDefault();

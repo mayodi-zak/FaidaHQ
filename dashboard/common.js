@@ -13,6 +13,13 @@
     ? window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { auth: { persistSession: true } })
     : null;
 
+  // Lets the chat widget (when loaded inside the dashboards) prove who is testing it,
+  // so private test assistants answer signed-in admins/members only.
+  window.FaidaHQAuth = function () {
+    if (!FQ.db) return null;
+    return FQ.db.auth.getSession().then(function (r) { return r.data && r.data.session ? r.data.session.access_token : null; });
+  };
+
   FQ.esc = function (s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
@@ -153,6 +160,36 @@
     FQ.$$("button[type=button][data-mode]", form).forEach(function (b) {
       b.addEventListener("click", function () { run(b.getAttribute("data-mode")); });
     });
+  };
+
+  // Line icons (24x24, stroke = currentColor) used in the sidebars.
+  var ICONS = {
+    overview: '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
+    profile: '<path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/>',
+    knowledge: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/>',
+    learning: '<path d="M12 22V12"/><path d="M12 12c0-4 3-7 8-7 0 5-3 8-8 7z"/><path d="M12 15c0-3-2-5-6-5 0 4 2 6 6 5z"/>',
+    conversations: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+    reservations: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+    customers: '<path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/>',
+    ai: '<rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V4M9 14h.01M15 14h.01M2 14h2M20 14h2"/>',
+    analytics: '<path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/>',
+    settings: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/>',
+    shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+    building: '<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"/>',
+    mail: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/>',
+  };
+  FQ.icon = function (name) {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONS[name] || "") + "</svg>";
+  };
+
+  /** Table that turns into stacked cards on phones. Cells carry data-label; a header of "" marks the action column. */
+  FQ.table = function (head, rows) {
+    return '<div class="table-wrap"><table class="stack-sm"><thead><tr>' + head.map(function (h) { return "<th>" + h + "</th>"; }).join("") + "</tr></thead><tbody>" +
+      rows.map(function (r) {
+        return "<tr>" + r.map(function (c, i) {
+          return "<td" + (head[i] ? ' data-label="' + FQ.esc(head[i]) + '"' : ' class="act"') + ">" + c + "</td>";
+        }).join("") + "</tr>";
+      }).join("") + "</tbody></table></div>";
   };
 
   /** Single-series daily bar chart (SVG). rows: [{day:'YYYY-MM-DD', value:n}] */

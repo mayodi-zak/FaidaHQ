@@ -7,16 +7,16 @@
   var S = { session: null, businesses: [], biz: null, role: null, channel: null };
 
   var VIEWS = [
-    ["overview", "Overview", "📊"],
-    ["profile", "Business profile", "🏨"],
-    ["knowledge", "Knowledge base", "📚"],
-    ["learning", "Assistant learning", "🌱"],
-    ["conversations", "Conversations", "💬"],
-    ["reservations", "Reservations", "📅"],
-    ["customers", "Customers", "👥"],
-    ["ai", "AI configuration", "🤖"],
-    ["analytics", "Usage analytics", "📈"],
-    ["settings", "Account settings", "⚙️"],
+    ["overview", "Overview", "overview"],
+    ["profile", "Business profile", "profile"],
+    ["knowledge", "Knowledge base", "knowledge"],
+    ["learning", "Assistant learning", "learning"],
+    ["conversations", "Conversations", "conversations"],
+    ["reservations", "Reservations", "reservations"],
+    ["customers", "Customers", "customers"],
+    ["ai", "AI configuration", "ai"],
+    ["analytics", "Usage analytics", "analytics"],
+    ["settings", "Account settings", "settings"],
   ];
 
   var CATEGORIES = {
@@ -104,8 +104,8 @@
     app.innerHTML =
       '<div class="layout"><aside class="sidebar" id="sidebar"><div class="side-brand"><img src="/img/logo-white.png" alt="FaidaHQ"></div>' +
       '<div class="side-biz">' + picker + '<span class="pill ' + (S.biz.status === "active" ? "good" : "critical") + '">' + esc(S.biz.status) + "</span></div>" +
-      "<nav>" + VIEWS.map(function (v) { return '<a href="#' + v[0] + '" data-view="' + v[0] + '"><span aria-hidden="true">' + v[2] + "</span>" + v[1] + "</a>"; }).join("") +
-      (S.isPlatformAdmin ? '<a href="/admin/"><span aria-hidden="true">🛡️</span>Platform admin</a>' : "") + "</nav>" +
+      "<nav>" + VIEWS.map(function (v) { return '<a href="#' + v[0] + '" data-view="' + v[0] + '">' + FQ.icon(v[2]) + v[1] + "</a>"; }).join("") +
+      (S.isPlatformAdmin ? '<a href="/admin/">' + FQ.icon("shield") + 'Platform admin</a>' : "") + "</nav>" +
       '<div class="side-foot"><span>' + esc(S.session.user.email) + '</span><button class="link light" id="signout">Sign out</button></div></aside>' +
       '<div class="main"><header class="topbar"><button class="icon-btn menu" id="menu" aria-label="Menu">☰</button><h1 id="view-title"></h1></header>' +
       '<section id="view" class="view" tabindex="-1"></section></div></div>';
@@ -170,12 +170,13 @@
         '<div class="kpis">' +
         kpi("Conversations (30 days)", FQ.num(r[0])) + kpi("Pending reservations", FQ.num(r[2]), r[2] ? "warning" : "") +
         kpi("Need a person", FQ.num(r[3]), r[3] ? "warning" : "") + kpi("New enquiries", FQ.num(r[4])) + "</div>" +
-        '<div class="card"><h2>Assistant replies this month</h2>' + FQ.meter(usage.used, usage.message_limit) +
-        '<p class="muted">The count starts again from zero on ' + FQ.date(nextReset()) + " (00:00 UTC). Nothing needs to be done.</p></div>" +
-        (tips.length ? '<div class="card"><h2>To do</h2><ul class="todo">' + tips.map(function (t) { return "<li>" + t + "</li>"; }).join("") + "</ul></div>" : "") +
-        '<div class="card"><h2>Latest conversations</h2>' + (r[6].length ? table(["Started", "Last message", "Messages", "Status"], r[6].map(function (c2) {
+        '<div class="cols"><div><div class="card"><h2>Latest conversations</h2>' + (r[6].length ? table(["Started", "Last message", "Messages", "Status"], r[6].map(function (c2) {
           return ['<a href="#conversations/' + c2.id + '">' + FQ.date(c2.started_at, true) + "</a>", FQ.ago(c2.last_message_at), c2.message_count, statusPill(c2.status)];
-        })) : '<p class="empty">No conversations yet. Add the widget to your website (see <a href="#profile">Business profile</a>).</p>') + "</div>";
+        })) : '<p class="empty">No conversations yet. Add the widget to your website (see <a href="#profile">Business profile</a>).</p>') + "</div></div>" +
+        '<aside class="rail"><div class="card"><h2>Assistant replies this month</h2>' + FQ.meter(usage.used, usage.message_limit) +
+        '<p class="muted">The count starts again from zero on ' + FQ.date(nextReset()) + " (00:00 UTC). Nothing needs to be done.</p></div>" +
+        '<div class="card"><h2>To do</h2>' + (tips.length ? '<ul class="todo">' + tips.map(function (t) { return "<li>" + t + "</li>"; }).join("") + "</ul>" : '<p class="muted">You are all caught up.</p>') + "</div>" +
+        '<div class="card"><h2>Your chat widget</h2><p class="muted">Change its name, colours and welcome message so it matches your brand.</p><div class="actions"><a class="btn" href="#profile">Customise widget</a></div></div></aside></div>';
     });
   };
 
@@ -186,10 +187,7 @@
     var tone = { open: "info", escalated: "warning", closed: "muted", pending: "warning", confirmed: "good", declined: "critical", cancelled: "muted", new: "info", in_progress: "warning", resolved: "good" }[s] || "muted";
     return '<span class="pill ' + tone + '">' + esc(String(s).replace("_", " ")) + "</span>";
   }
-  function table(head, rows) {
-    return '<div class="table-wrap"><table><thead><tr>' + head.map(function (h) { return "<th>" + h + "</th>"; }).join("") + "</tr></thead><tbody>" +
-      rows.map(function (r) { return "<tr>" + r.map(function (c) { return "<td>" + c + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table></div>";
-  }
+  var table = FQ.table;
 
   // --- profile ---------------------------------------------------------------
   RENDER.profile = function (box) {
@@ -197,7 +195,7 @@
       var br = b.branding || {};
       var dis = canEdit() ? "" : " disabled";
       var embed = '<script src="' + location.origin + '/widget.js"\n        data-business-id="' + b.id + '"\n        data-api-url="' + (FQ.cfg.functionsUrl || "https://YOUR-PROJECT.supabase.co/functions/v1") + '"\n        defer></' + "script>";
-      box.innerHTML =
+      box.innerHTML = '<div class="cols"><div>' +
         '<form id="pf" class="card form-grid"><h2 class="full">Details</h2>' +
         inp("Business name", "name", b.name, 'maxlength="120" required') +
         sel("Type", "type", b.type, TYPES) +
@@ -205,19 +203,26 @@
         inp("Phone", "phone", b.phone) + inp("WhatsApp", "whatsapp", b.whatsapp) + inp("Email", "email", b.email, 'type="email"') + inp("Website", "website", b.website) +
         inp("Address", "address", b.address) + inp("City / town", "city", b.city) + inp("Country", "country", b.country) +
         inp("Time zone", "timezone", b.timezone) + inp("Currency (3 letters)", "currency", b.currency, 'maxlength="3"') +
-        '<h2 class="full">Chat widget look</h2>' +
+        '<h2 class="full" style="margin-top:8px">Chat widget look</h2>' +
         inp("Assistant name", "assistant_name", br.assistant_name, 'maxlength="40"') + inp("Logo URL (optional)", "logo_url", br.logo_url) +
         inp("Main colour", "primary_color", br.primary_color || "#4f46e5", 'type="color"') + inp("Accent colour", "accent_color", br.accent_color || "#10b981", 'type="color"') +
         txt("Welcome message", "welcome_message", br.welcome_message, 400) +
         txt("Suggested questions (one per line, up to 4)", "suggestions", (br.suggestions || []).join("\n"), 400) +
         txt("Websites allowed to show the chat (one per line, e.g. https://myhotel.co.ke). Leave empty to allow any.", "allowed_origins", (b.allowed_origins || []).join("\n"), 2000) +
-        (canEdit() ? '<div class="full"><button class="btn">Save profile</button></div>' : '<p class="full muted">Only owners and admins can edit the profile.</p>') + "</form>" +
+        (canEdit() ? '<div class="full"><button class="btn">Save profile</button></div>' : '<p class="full muted">Only owners and admins can edit the profile.</p>') + "</form></div>" +
+        '<aside class="rail"><div class="card"><div class="card-head"><h2>Widget preview</h2><span class="pill good">Live</span></div>' +
+        '<div class="wp" id="wp"><div class="wp-head"><div class="wp-av" id="wp-av"></div><div><b id="wp-name"></b><small>Online · replies instantly</small></div></div>' +
+        '<div class="wp-body"><div class="wp-msg" id="wp-welcome"></div><div class="wp-msg user">What time is check-in?</div></div>' +
+        '<div class="wp-chips" id="wp-chips"></div><div class="wp-foot"><span>Type your message…</span><i></i></div></div>' +
+        '<div class="wp-launch-wrap"><div class="wp-launch" id="wp-launch">' + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div></div>' +
+        '<p class="muted" style="margin:12px 0 0">Updates as you type. Press <strong>Save profile</strong> to publish it to guests.</p></div>' +
         '<div class="card"><h2>Add the chat to your website</h2><p>Paste this just before <code>&lt;/body&gt;</code> on every page of your website:</p>' +
         '<pre class="code" id="embed">' + esc(embed) + '</pre><button class="btn ghost" id="copy">Copy code</button> ' +
         '<button class="btn ghost" id="preview">Preview the chat here</button></div>' +
         '<div class="card"><h2>Show it to a client</h2><p>A shareable page where anyone can try this assistant, without installing anything on a website. It uses the live assistant, so it answers from the knowledge base and counts toward the monthly replies.</p>' +
         '<pre class="code">' + esc(location.origin + "/preview/?b=" + b.id) + '</pre><a class="btn" href="/preview/?b=' + b.id + '" target="_blank" rel="noopener">Open preview page</a> <button class="btn ghost" id="copy-preview">Copy link</button>' +
-        ((b.allowed_origins || []).length ? '<p class="muted">Your "allowed websites" list is set, so add <code>' + esc(location.origin) + '</code> to it or this page will be refused.</p>' : "") + "</div>";
+        ((b.allowed_origins || []).length ? '<p class="muted">Your "allowed websites" list is set, so add <code>' + esc(location.origin) + '</code> to it or this page will be refused.</p>' : "") + "</div></aside></div>";
+      livePreview($("#pf"));
       if (dis) $$("#pf input,#pf select,#pf textarea").forEach(function (f) { f.disabled = true; });
       $("#copy").onclick = function () { navigator.clipboard.writeText(embed).then(function () { FQ.toast("Copied"); }); };
       $("#preview").onclick = function () { previewWidget(b.id); };
@@ -246,6 +251,26 @@
       });
     });
   };
+
+  // Mirrors the chat widget's look from the form fields as the client edits them.
+  function livePreview(form) {
+    var hex = /^#[0-9a-f]{6}$/i;
+    function draw() {
+      var d = FQ.formData(form), wp = $("#wp");
+      var p = hex.test(d.primary_color) ? d.primary_color : "#4f46e5", a = hex.test(d.accent_color) ? d.accent_color : "#10b981";
+      [wp, $("#wp-launch")].forEach(function (el) { el.style.setProperty("--p", p); el.style.setProperty("--a", a); });
+      var name = d.assistant_name || d.name || "Assistant";
+      $("#wp-name").textContent = name;
+      $("#wp-welcome").textContent = d.welcome_message || "Hello! How can I help you today?";
+      var av = $("#wp-av");
+      if (/^https:\/\//.test(d.logo_url || "")) { av.innerHTML = '<img alt="" src="' + esc(d.logo_url) + '">'; av.firstChild.onerror = function () { av.textContent = name.charAt(0).toUpperCase(); }; }
+      else av.textContent = name.charAt(0).toUpperCase();
+      $("#wp-chips").innerHTML = (d.suggestions || "").split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean).slice(0, 4)
+        .map(function (x) { return '<span class="wp-chip">' + esc(x) + "</span>"; }).join("");
+    }
+    form.addEventListener("input", draw);
+    draw();
+  }
 
   function previewWidget(businessId) {
     if (!FQ.cfg.functionsUrl) return FQ.toast("Set functionsUrl in js/faidahq-config.js first", "error");
@@ -336,17 +361,17 @@
   // Nothing reaches guests until an owner/admin approves it here.
   RENDER.learning = function (box) {
     return FQ.q(FQ.db.from("knowledge_suggestions").select("*").eq("business_id", bid()).eq("status", "pending").order("created_at", { ascending: false }), "Load suggestions").then(function (list) {
-      box.innerHTML = '<div class="card"><h2>Assistant learning</h2>' +
+      box.innerHTML = '<div class="cols"><aside class="rail" style="order:2"><div class="card"><h2>Assistant learning</h2>' +
         "<p>When the assistant cannot answer a guest, it drafts a knowledge entry from the conversation (using your team's reply when there is one). " +
         "You approve, edit or dismiss each draft. Nothing is shown to guests until you approve it.</p>" +
         (canEdit() ? '<button class="btn" id="learn-now">Check recent conversations now</button> ' : "") +
-        '<span class="muted">Also runs automatically if your platform administrator has scheduled it.</span></div>' +
-        '<div class="card"><h2>Suggested additions (' + list.length + ")</h2>" + (list.length ? list.map(function (x) {
+        '<p class="muted" style="margin-top:10px">Also runs automatically if your platform administrator has scheduled it.</p></div></aside>' +
+        '<div style="order:1;min-width:0"><div class="card"><h2>Suggested additions (' + list.length + ")</h2>" + (list.length ? list.map(function (x) {
           return '<div class="suggestion"><strong>' + FQ.esc(x.title) + '</strong> <span class="pill">' + FQ.esc(CATEGORIES[x.category] || x.category) + "</span>" +
             (x.content ? "<p>" + FQ.esc(x.content) + "</p>" : '<p class="muted">Guests asked this and no answer was recorded. Add the answer to approve it.</p>') +
             (x.source_conversation_id ? '<a href="#conversations/' + x.source_conversation_id + '">See the conversation</a> ' : "") +
             (canEdit() ? '<button class="btn" data-ok="' + x.id + '">Review and approve</button> <button class="btn ghost" data-no="' + x.id + '">Dismiss</button>' : "") + "</div>";
-        }).join("") : '<p class="empty">No suggestions right now. They appear here when guests ask something the assistant could not answer.</p>') + "</div>";
+        }).join("") : '<p class="empty">No suggestions right now. They appear here when guests ask something the assistant could not answer.</p>') + "</div></div></div>";
       function review(id, action, extra) {
         var args = Object.assign({ p_id: id, p_action: action }, extra || {});
         return FQ.q(FQ.db.rpc("review_knowledge_suggestion", args), "Save").then(function () { FQ.toast(action === "approve" ? "Added to your knowledge base" : "Dismissed"); return RENDER.learning(box); });
@@ -527,14 +552,17 @@
   RENDER.ai = function (box) {
     return FQ.q(FQ.db.from("ai_settings").select("*").eq("business_id", bid()).maybeSingle(), "Load AI settings").then(function (s) {
       s = s || { provider: "default", model: "", temperature: 0.3, max_output_tokens: 600, tone: "warm and professional", extra_instructions: "" };
-      box.innerHTML = '<form id="aif" class="card form-grid"><p class="full muted">The assistant always follows FaidaHQ\'s safety rules: it only uses your knowledge base, never invents prices or availability, and never confirms bookings. API keys are kept on the server by FaidaHQ and are never shown here.</p>' +
+      box.innerHTML = '<div class="cols"><div><form id="aif" class="card form-grid"><p class="full muted">The assistant always follows FaidaHQ\'s safety rules: it only uses your knowledge base, never invents prices or availability, and never confirms bookings. API keys are kept on the server by FaidaHQ and are never shown here.</p>' +
         sel("AI provider", "provider", s.provider, { "default": "FaidaHQ default (recommended)", anthropic: "Anthropic Claude", openai: "OpenAI", gemini: "Google Gemini", openai_compatible: "OpenAI-compatible service" }) +
         inp("Model (leave empty for the default)", "model", s.model, 'maxlength="100" placeholder="e.g. claude-haiku-5-5"') +
         inp("Creativity (0 = precise, 1 = creative; not used by Claude)", "temperature", s.temperature, 'type="number" min="0" max="1" step="0.05"') +
         inp("Maximum reply length (tokens)", "max_output_tokens", s.max_output_tokens, 'type="number" min="50" max="2000"') +
         inp("Tone of voice", "tone", s.tone, 'maxlength="200"') +
         txt("Extra instructions (e.g. greet in Swahili, mention our Friday buffet)", "extra_instructions", s.extra_instructions, 2000) +
-        (canEdit() ? '<div class="full"><button class="btn">Save AI settings</button> <button type="button" class="btn ghost" id="try">Test the assistant</button></div>' : "") + "</form>";
+        (canEdit() ? '<div class="full"><button class="btn">Save AI settings</button> <button type="button" class="btn ghost" id="try">Test the assistant</button></div>' : "") + "</form></div>" +
+        '<aside class="rail"><div class="card"><h2>Try it live</h2><p class="muted">Save your changes, then open the chat to see how the assistant answers with your tone and instructions.</p><div class="actions"><button type="button" class="btn accent" id="try2">Open the chat</button></div></div>' +
+        '<div class="card"><h2>Tips</h2><ul class="todo muted" style="padding-left:18px;margin:0"><li>Keep the tone short, e.g. "warm and professional".</li><li>Use extra instructions for greetings, offers or languages.</li><li>The assistant only answers from your knowledge base.</li></ul></div></aside></div>';
+      if ($("#try2")) $("#try2").onclick = function () { previewWidget(bid()); };
       if (!canEdit()) $$("#aif input,#aif select,#aif textarea").forEach(function (f) { f.disabled = true; });
       if ($("#try")) $("#try").onclick = function () { previewWidget(bid()); };
       $("#aif").addEventListener("submit", function (e) {
@@ -588,13 +616,13 @@
   // --- settings --------------------------------------------------------------
   RENDER.settings = function (box) {
     return FQ.q(FQ.db.rpc("list_business_members", { p_business_id: bid() }), "Load team").then(function (team) {
-      box.innerHTML = '<div class="card"><h2>Your account</h2><p>Signed in as <strong>' + esc(S.session.user.email) + "</strong> (" + esc(S.role) + ')</p>' +
-        '<button class="btn ghost" id="pw">Change password</button> <button class="btn ghost" id="so">Sign out</button></div>' +
-        '<div class="card"><h2>Team</h2>' + table(["Email", "Role", "Added"], team.map(function (m) { return [esc(m.email), esc(m.role), FQ.date(m.created_at)]; })) +
+      box.innerHTML = '<div class="cols"><div><div class="card"><h2>Team</h2>' + table(["Email", "Role", "Added"], team.map(function (m) { return [esc(m.email), esc(m.role), FQ.date(m.created_at)]; })) +
         (S.role === "owner" ? '<form id="addm" class="inline-form"><input name="email" type="email" placeholder="colleague@email.com" required aria-label="Email">' +
           '<select name="role" aria-label="Role"><option value="staff">Staff (reads, replies, confirms bookings)</option><option value="admin">Admin (also edits knowledge & profile)</option></select>' +
-          '<button class="btn">Add to team</button></form><p class="muted">Your colleague must create a FaidaHQ account first.</p>' : "") + "</div>" +
-        '<div class="card"><h2>Subscription</h2><p>Plan and billing are managed by FaidaHQ. <a href="/contact/">Contact us</a> to change your plan.</p></div>';
+          '<button class="btn">Add to team</button></form><p class="muted">Your colleague must create a FaidaHQ account first.</p>' : "") + "</div></div>" +
+        '<aside class="rail"><div class="card"><h2>Your account</h2><p>Signed in as <strong>' + esc(S.session.user.email) + "</strong> (" + esc(S.role) + ')</p>' +
+        '<div class="actions"><button class="btn ghost" id="pw">Change password</button><button class="btn ghost" id="so">Sign out</button></div></div>' +
+        '<div class="card"><h2>Subscription</h2><p>Plan and billing are managed by FaidaHQ. <a href="/contact/">Contact us</a> to change your plan.</p></div></aside></div>';
       $("#pw").onclick = promptNewPassword;
       $("#so").onclick = function () { FQ.db.auth.signOut(); };
       if ($("#addm")) $("#addm").addEventListener("submit", function (e) {
